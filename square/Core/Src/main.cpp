@@ -18,7 +18,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <Motor/motor.h>
+#include "Motor/motor.h"
 #include "main.h"
 #include "cmsis_os.h"
 #include "i2c.h"
@@ -44,7 +44,8 @@ UART_HandleTypeDef huart2;
 
 xSemaphoreHandle gps_sem;
 SF_Nav kf;
-state_var boatState;
+state_var boatState;		// Stores current state of the boat
+state_var targetState;	// State that we want boat to be at
 
 int pwm1 = 0;
 int pwm2 = 0;
@@ -70,6 +71,7 @@ void MoveToPoint(void* arg) {
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 		boatState = kf.get_state();
+
 	}
 }
 
@@ -93,6 +95,16 @@ void UpdateKF(void* arg) {
 		boatState = kf.get_state();
 //		uart_printf("some\r\n");
 //		vTaskDelay(1000);
+	}
+}
+
+void TestMotors(void* arg) {
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	xLastWakeTime = xTaskGetTickCount();
+	setSpeed(0, 0, 0, 20);
+	while(1) {
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
 
