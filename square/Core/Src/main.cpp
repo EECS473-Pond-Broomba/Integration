@@ -119,7 +119,7 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setSpeed(0, 0, 0, 20);
+	setSpeed(0, 0, 0, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -213,10 +213,10 @@ int main(void)
       					.vB = 0};
       targetStates.push_back(temp4);
 
-  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
-  xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
-//  xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
+  //xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
+  //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
+  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+  //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
   vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
