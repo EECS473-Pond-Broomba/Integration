@@ -73,7 +73,7 @@ void oppositeDirection(){
 Turns motors off by setting the pwm equal to 0
 */
 void stopMotors(){
-	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_3, 0);
+	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_4, 0);
 	__HAL_TIM_SetCompare(htiml2, TIM_CHANNEL_1, 0);
 	__HAL_TIM_SetCompare(htimr1, TIM_CHANNEL_1, 0);
 	__HAL_TIM_SetCompare(htimr2, TIM_CHANNEL_1, 0);
