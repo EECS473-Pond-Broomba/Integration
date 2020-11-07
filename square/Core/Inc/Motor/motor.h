@@ -49,7 +49,7 @@ void setSpeed(int pwm1, int pwm2, int pwm3, int pwm4){
   left forward(0), left back(1), right forward(4), right back (5), forward(2), backwards(3)
 * degreeTurn: The amount of degrees to turn the robot
 */
-void changeDirection(int direction, int degreeTurn){
+void changeDirection(int degreeTurn){
 	return;
 }
 

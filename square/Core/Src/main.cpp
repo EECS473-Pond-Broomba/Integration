@@ -62,8 +62,12 @@ void MX_TIM3_Init(void);
 void MX_TIM4_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_FREERTOS_Init(void);
-double distanceBetweenStates(state_var state1, state_var state2);
-double bearingBetweenStates(state_var state1, state_var state2);
+double distanceBetweenStates(state_var state1, state_var state2) {
+	return sqrt(pow(state1.x - state2.x, 2) + pow(state1.y - state2.y, 2));
+}
+double bearingBetweenStates(state_var state1, state_var state2) {
+	return atan2(state1.y - state2.y, state1.x - state2.x) * (180.0/3.141592653589793238463);
+}
 
 // ---------------------------- Our Tasks --------------------------------------
 
@@ -75,8 +79,15 @@ void MoveToPoint(void* arg) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 		boatState = kf.get_state();
 
+		// Turn the robot in the correct direction
+		changeDirection(bearingBetweenStates(boatState, targetStates[targetCounter]));
+		vTaskDelay(500);
+
 		if(distanceBetweenStates(boatState, targetStates[targetCounter]) < 0.5) {
 			targetCounter++;
+		}
+		else {
+			setSpeed(20, 20, 20, 20);
 		}
 	}
 }
@@ -111,6 +122,17 @@ void TestMotors(void* arg) {
 	setSpeed(0, 0, 0, 20);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+	}
+}
+
+void TurnBoat(void* arg) {
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	xLastWakeTime = xTaskGetTickCount();
+	while(1) {
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		changeDirection(15);
+		vTaskDelay(500);
 	}
 }
 
@@ -162,12 +184,39 @@ int main(void)
   motorInit(&htim1, &htim2, &htim3, &htim4);
 
   // Set up path
-  targetStates.push_back(state_var(0, 1, 0, 0, 0, 0));
-  targetStates.push_back(state_var(1, 1, 0, 0, 0, 0));
-  targetStates.push_back(state_var(1, 0, 0, 0, 0, 0));
-  targetStates.push_back(state_var(0, 0, 0, 0, 0, 0));
+  state_var temp1 = { .x = 0,
+  					.y = 1,
+  					.b = 0,
+					.vX = 0,
+					.vY = 0,
+					.vB = 0};
+  targetStates.push_back(temp1);
+  state_var temp2 = { .x = 1,
+    					.y = 1,
+    					.b = 0,
+  					.vX = 0,
+  					.vY = 0,
+  					.vB = 0};
+  targetStates.push_back(temp2);
+  state_var temp3 = { .x = 1,
+      					.y = 0,
+      					.b = 0,
+    					.vX = 0,
+    					.vY = 0,
+    					.vB = 0};
+    targetStates.push_back(temp3);
+    state_var temp4 = { .x = 0,
+        					.y = 0,
+        					.b = 0,
+      					.vX = 0,
+      					.vY = 0,
+      					.vB = 0};
+      targetStates.push_back(temp4);
 
   xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
+  xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
+//  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+//  xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
   vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
