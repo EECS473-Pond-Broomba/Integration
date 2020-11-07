@@ -30,6 +30,7 @@
 #include "uart_printf.h"
 #include "semphr.h"
 #include "FreeRTOS.h"
+#include <vector>
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
@@ -45,8 +46,8 @@ UART_HandleTypeDef huart2;
 xSemaphoreHandle gps_sem;
 SF_Nav kf;
 state_var boatState;		// Stores current state of the boat
-state_var targetState;	// State that we want boat to be at
-
+std::vector<state_var> targetStates;	// States that we want boat to be at
+int targetCounter = 0;
 int pwm1 = 0;
 int pwm2 = 0;
 
@@ -61,6 +62,8 @@ void MX_TIM3_Init(void);
 void MX_TIM4_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_FREERTOS_Init(void);
+double distanceBetweenStates(state_var state1, state_var state2);
+double bearingBetweenStates(state_var state1, state_var state2);
 
 // ---------------------------- Our Tasks --------------------------------------
 
@@ -72,6 +75,9 @@ void MoveToPoint(void* arg) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 		boatState = kf.get_state();
 
+		if(distanceBetweenStates(boatState, targetStates[targetCounter]) < 0.5) {
+			targetCounter++;
+		}
 	}
 }
 
@@ -154,6 +160,12 @@ int main(void)
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, 0);
   __HAL_TIM_SetCompare(&htim4, TIM_CHANNEL_1, 0);
   motorInit(&htim1, &htim2, &htim3, &htim4);
+
+  // Set up path
+  targetStates.push_back(state_var(0, 1, 0, 0, 0, 0));
+  targetStates.push_back(state_var(1, 1, 0, 0, 0, 0));
+  targetStates.push_back(state_var(1, 0, 0, 0, 0, 0));
+  targetStates.push_back(state_var(0, 0, 0, 0, 0, 0));
 
   xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
   vTaskStartScheduler();

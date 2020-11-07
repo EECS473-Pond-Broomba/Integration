@@ -27,6 +27,10 @@ void motorInit(TIM_HandleTypeDef * htim1, TIM_HandleTypeDef * htim2,
 	htimr2 = htim4;
 }
 
+/*
+* Set the motor to a new speed
+* takes in the pwm values for left and right pwm for each motor
+*/
 void setSpeed(int pwm1, int pwm2, int pwm3, int pwm4){
 	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_3, pwm1);
 	pwml1 = pwm1;
@@ -39,10 +43,19 @@ void setSpeed(int pwm1, int pwm2, int pwm3, int pwm4){
 	HAL_Delay(100);
 }
 
+/*
+* Changes the direction the motors are driving in
+* direction: A value that distinguishes which exact direction the motors should go in:
+  left forward(0), left back(1), right forward(4), right back (5), forward(2), backwards(3)
+* degreeTurn: The amount of degrees to turn the robot
+*/
 void changeDirection(int direction, int degreeTurn){
 	return;
 }
 
+/*
+Causes the motors to move forward or backward based on current GPIO Pin State
+*/
 void oppositeDirection(){
 	int temp1;
 	int temp2;
@@ -56,6 +69,9 @@ void oppositeDirection(){
 	pwml2 = temp2;
 }
 
+/*
+Turns motors off by setting the pwm equal to 0
+*/
 void stopMotors(){
 	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_3, 0);
 	__HAL_TIM_SetCompare(htiml2, TIM_CHANNEL_1, 0);
