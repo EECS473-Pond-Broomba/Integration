@@ -82,9 +82,12 @@ void MovePID(void* arg) {
 	double bError = 0;
 	double dIntegral = 0;
 	double bIntegral = 0;
-	int Kp = 1;
-	int Ki = 1;
-	int Kd = 1;
+	int dKp = 1;
+	int dKi = 1;
+	int dKd = 1;
+	int bKp = 1;
+	int bKi = 1;
+	int bKd = 1;
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 		// Calculate error between current and set point
@@ -99,7 +102,8 @@ void MovePID(void* arg) {
 
 		// TODO: Set pwm duty cycles
 		// I need a range of duty cycles that we are working with
-		// output = Kp*error + Ki*integral + Kd*derivative
+		double dOutput = dKp*newDError + dKi*newDIntegral + dKd*newDDerivative;
+		double bOutput = bKp*newBError + bKi*newBIntegral + bKd*newBDerivative;
 		// Calculate one for distance and one for bearing, then add/superimpose them
 		// onto each other to get final pwm duty cycles
 
@@ -160,7 +164,7 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setSpeed(0, 0, 0, 0);
+	setSpeed(0, 150, 0, 150);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -335,7 +339,7 @@ void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 4;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 160;
+  htim1.Init.Period = 690;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -399,7 +403,7 @@ void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 4;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 160;
+  htim2.Init.Period = 690;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -448,7 +452,7 @@ void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 4;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 160;
+  htim3.Init.Period = 690;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -497,7 +501,7 @@ void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 4;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 160;
+  htim4.Init.Period = 690;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
