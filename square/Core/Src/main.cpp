@@ -51,6 +51,8 @@ int targetCounter = 0;
 int pwm1 = 0;
 int pwm2 = 0;
 
+#define PIDPERIOD 500
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);
@@ -62,15 +64,54 @@ void MX_TIM3_Init(void);
 void MX_TIM4_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_FREERTOS_Init(void);
-double distanceBetweenStates(state_var state1, state_var state2) {
+double distanceBetweenStates(state_var &state1, state_var &state2) {
 	return sqrt(pow(state1.x - state2.x, 2) + pow(state1.y - state2.y, 2));
 }
-double bearingBetweenStates(state_var state1, state_var state2) {
+double bearingBetweenStates(state_var &state1, state_var &state2) {
 	return atan2(state1.y - state2.y, state1.x - state2.x) * (180.0/3.141592653589793238463);
 }
 
 // ---------------------------- Our Tasks --------------------------------------
 
+// Moves to a target state using PID like a noob
+void MovePID(void* arg) {
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(PIDPERIOD);
+	xLastWakeTime = xTaskGetTickCount();
+	double dError = 0;
+	double bError = 0;
+	double dIntegral = 0;
+	double bIntegral = 0;
+	int Kp = 1;
+	int Ki = 1;
+	int Kd = 1;
+	while(1) {
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		// Calculate error between current and set point
+		double newDError = distanceBetweenStates(boatState, targetStates[targetCounter]);
+		double newBError = bearingBetweenStates(boatState, targetStates[targetCounter]);
+		// Riemann sum basically
+		double newDIntegral = dIntegral + newDError * PIDPERIOD;
+		double newBIntegral = bIntegral + newBError * PIDPERIOD;
+		// Basic slope calculation
+		double newDDerivative = (newDError - dError) / PIDPERIOD;
+		double newBDerivative = (newBError - bError) / PIDPERIOD;
+
+		// TODO: Set pwm duty cycles
+		// I need a range of duty cycles that we are working with
+		// output = Kp*error + Ki*integral + Kd*derivative
+		// Calculate one for distance and one for bearing, then add/superimpose them
+		// onto each other to get final pwm duty cycles
+
+		// Update values
+		dError = newDError;
+		bError = newBError;
+		dIntegral = newDIntegral;
+		bIntegral = newBIntegral;
+	}
+}
+
+// Moves to a target using dead reckoning like a chad
 void MoveToPoint(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
@@ -83,7 +124,7 @@ void MoveToPoint(void* arg) {
 		changeDirection(bearingBetweenStates(boatState, targetStates[targetCounter]));
 		vTaskDelay(500);
 
-		if(distanceBetweenStates(boatState, targetStates[targetCounter]) < 0.5) {
+		if(distanceBetweenStates(boatState, targetStates[targetCounter]) < 0.3) {
 			targetCounter++;
 		}
 		else {
@@ -214,6 +255,7 @@ int main(void)
       targetStates.push_back(temp4);
 
   //xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
+//  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
   xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
