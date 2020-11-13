@@ -7,6 +7,7 @@
 
 #include <SF_Nav/SFNav.h>
 #include <cmath>
+#define WNOISE 0.1
 
 SF_Nav::SF_Nav() {
 	// TODO Auto-generated constructor stub
@@ -48,19 +49,19 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	P_n = I;
 	P_pred = I;
 	//TODO: Get an estimate for w, Q and v, R
-	w << 0.1,
-		 0.1,
-		 0.1,
-		 0.1,
-		 0.1,
-		 0.1;
+	w << WNOISE,
+		WNOISE,
+		WNOISE,
+		WNOISE,
+		WNOISE,
+		WNOISE;
 	// Jacobian of w w.r.t states
-	W << 0.1, 0, 0, 0, 0, 0,
-		 0, 0.1, 0, 0, 0, 0,
-		 0, 0, 0.1, 0, 0, 0,
-		 0, 0, 0, 0.1, 0, 0,
-		 0, 0, 0, 0, 0.1, 0,
-		 0, 0, 0, 0, 0, 0.1;
+	W << WNOISE, 0, 0, 0, 0, 0,
+		 0, WNOISE, 0, 0, 0, 0,
+		 0, 0, WNOISE, 0, 0, 0,
+		 0, 0, 0, WNOISE, 0, 0,
+		 0, 0, 0, 0, WNOISE, 0,
+		 0, 0, 0, 0, 0, WNOISE;
 //	Q << Eigen::Matrix6f::Identity();
 	Q = I;
 	v << 0.1,
@@ -95,7 +96,8 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 
 void SF_Nav::update()
 {
-	double dist, bearing;
+	double dist, bearing, gpsBearing;
+//	bearing = imu.getOrientation(IMU::Axes::z);
 //	vTaskDelay(500);
 	//Get inputs u_n and z_n
 	if(gps.update()) {
@@ -105,10 +107,10 @@ void SF_Nav::update()
 		if(prev_location.latitude < 0.1 && prev_location.latitude > -0.1) {
 			prev_location = curr_location;
 		}
-		curr_vel = gps.getVelocity();
 		imu.calculateLinearVelocity();
-		lwgps_distance_bearing(prev_location.latitude, prev_location.longitude, curr_location.latitude, curr_location.longitude, &dist, &bearing);
-
+		curr_vel = gps.getVelocity();
+		lwgps_distance_bearing(prev_location.latitude, prev_location.longitude, curr_location.latitude, curr_location.longitude, &dist, &gpsBearing);
+		bearing = imu.getOrientation(IMU::Axes::z);
 		//Now convert the distance and bearing to and x and y
 //		state.x = state.x + sind(bearing)* dist;
 //		state.y = state.y + cosd(bearing)* dist;
