@@ -119,7 +119,7 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setSpeed(0, 0, 0, 0);
+	setSpeed(78, 0, 78, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
