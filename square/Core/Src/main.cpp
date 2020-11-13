@@ -51,6 +51,13 @@ int targetCounter = 0;
 int pwm1 = 0;
 int pwm2 = 0;
 
+#define PIDPERIOD 500
+#define MOTORMAXDIFF 20
+#define MOTORMIN 150 + MOTORMAXDIFF
+#define MOTORMAX 250 - MOTORMAXDIFF
+#define DISTDEADZONE 0.3	// If robot is within this distance of target, motors dont move
+#define DISTSATURATE 5		// If robot is further than this distance of target, motors move at maximum speed
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);
@@ -62,33 +69,93 @@ void MX_TIM3_Init(void);
 void MX_TIM4_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_FREERTOS_Init(void);
-double distanceBetweenStates(state_var state1, state_var state2) {
+double distanceBetweenStates(state_var &state1, state_var &state2) {
 	return sqrt(pow(state1.x - state2.x, 2) + pow(state1.y - state2.y, 2));
 }
-double bearingBetweenStates(state_var state1, state_var state2) {
+double bearingBetweenStates(state_var &state1, state_var &state2) {
 	return atan2(state1.y - state2.y, state1.x - state2.x) * (180.0/3.141592653589793238463);
 }
 
 // ---------------------------- Our Tasks --------------------------------------
+/*
+// Moves to a target state using PID like a noob
+void MovePID(void* arg) {
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(PIDPERIOD);
+	xLastWakeTime = xTaskGetTickCount();
+	double dError = 0;
+	double bError = 0;
+	double dIntegral = 0;
+	double bIntegral = 0;
+	int dKp = 1;
+	int dKi = 1;
+	int dKd = 1;
+	int bKp = 1;
+	int bKi = 1;
+	int bKd = 1;
+	while(1) {
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		// Calculate error between current and set point
+		double newDError = distanceBetweenStates(boatState, targetStates[targetCounter]);
+		double newBError = bearingBetweenStates(boatState, targetStates[targetCounter]);
+		// Riemann sum basically
+		double newDIntegral = dIntegral + newDError * PIDPERIOD;
+		double newBIntegral = bIntegral + newBError * PIDPERIOD;
+		// Basic slope calculation
+		double newDDerivative = (newDError - dError) / PIDPERIOD;
+		double newBDerivative = (newBError - bError) / PIDPERIOD;
 
+		// TODO: Set pwm duty cycles
+		// I need a range of duty cycles that we are working with
+		double dOutput = dKp*newDError + dKi*newDIntegral + dKd*newDDerivative;
+		double bOutput = bKp*newBError + bKi*newBIntegral + bKd*newBDerivative;
+		// Calculate one for distance and one for bearing, then add/superimpose them
+		// onto each other to get final pwm duty cycles
+
+		// Update values
+		dError = newDError;
+		bError = newBError;
+		dIntegral = newDIntegral;
+		bIntegral = newBIntegral;
+	}
+}
+*/
+// Moves to a target using basic error correction function
 void MoveToPoint(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		kf.update();
 		boatState = kf.get_state();
 
-		// Turn the robot in the correct direction
-		changeDirection(bearingBetweenStates(boatState, targetStates[targetCounter]));
-		vTaskDelay(500);
+		// Calculate errors
+		double distanceError = distanceBetweenStates(boatState, targetStates[targetCounter]);
+		double bearingError = bearingBetweenStates(boatState, targetStates[targetCounter]);
 
-		if(distanceBetweenStates(boatState, targetStates[targetCounter]) < 0.5) {
-			targetCounter++;
+		int pwml = 0;
+		int pwmr = 0;
+		// NOTE: Might have to negative bearingError
+		int bearingAdjustment = pow((0.1 * bearingError), 3);
+		// Clamp bearing adjustment to +/-20
+		bearingAdjustment = bearingAdjustment > 20 ? 20 :
+							bearingAdjustment < -20 ? -20 :
+							bearingAdjustment;
+		// Only spin motors if robot is further than this amount from target
+		if(distanceError > DISTDEADZONE && distanceError < DISTSATURATE) {
+			int temp = pow(0.9 * distanceError, 3) + MOTORMIN;	// If distanceError is just under 5, set DC to around 260
+			pwml = temp;
+			pwmr = temp;
+			// Adjust speeds based on bearing error
 		}
-		else {
-			setSpeed(20, 20, 20, 20);
+		else if(distanceError >= DISTSATURATE) {
+			pwml = MOTORMAX;
+			pwmr = MOTORMAX;
 		}
+
+		// NOTE: Might have to add bearingAdjustment to pwmr instead of pwml
+		setSpeed(0, pwml + bearingAdjustment, 0, pwmr);
 	}
 }
 
@@ -119,7 +186,11 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
+<<<<<<< HEAD
 	setSpeed(78, 0, 78, 0);
+=======
+	setSpeed(0, 150, 0, 150);
+>>>>>>> 08836dd3ec41880b418761c5a56b7cd59a9814a2
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -214,6 +285,7 @@ int main(void)
       targetStates.push_back(temp4);
 
   //xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
+//  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
   xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
@@ -293,7 +365,7 @@ void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 4;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 160;
+  htim1.Init.Period = 690;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -357,7 +429,7 @@ void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 4;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 160;
+  htim2.Init.Period = 690;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -406,7 +478,7 @@ void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 4;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 160;
+  htim3.Init.Period = 690;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -455,7 +527,7 @@ void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 4;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 160;
+  htim4.Init.Period = 690;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
