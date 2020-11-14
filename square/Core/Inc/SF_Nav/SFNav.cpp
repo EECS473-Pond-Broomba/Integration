@@ -8,6 +8,7 @@
 #include <SF_Nav/SFNav.h>
 #include <cmath>
 #define WNOISE 0.1
+#define VNOISE 0.1
 
 SF_Nav::SF_Nav() {
 	// TODO Auto-generated constructor stub
@@ -64,19 +65,19 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 		 0, 0, 0, 0, 0, WNOISE;
 //	Q << Eigen::Matrix6f::Identity();
 	Q = I;
-	v << 0.1,
-		 0.1,
-		 0.1,
-		 0.1,
-		 0.1,
-		 0.1;
+	v << VNOISE,
+		VNOISE,
+		VNOISE,
+		VNOISE*5.0,
+		VNOISE*5.0,
+		VNOISE;
 	// Jacobian of w w.r.t states
-	V << 0.1, 0, 0, 0, 0, 0,
-		 0, 0.1, 0, 0, 0, 0,
-		 0, 0, 0.1, 0, 0, 0,
-		 0, 0, 0, 0.1, 0, 0,
-		 0, 0, 0, 0, 0.1, 0,
-		 0, 0, 0, 0, 0, 0.1;
+	V << VNOISE, 0, 0, 0, 0, 0,
+		 0, VNOISE, 0, 0, 0, 0,
+		 0, 0, VNOISE, 0, 0, 0,
+		 0, 0, 0, VNOISE*5.0, 0, 0,
+		 0, 0, 0, 0, VNOISE*5.0, 0,
+		 0, 0, 0, 0, 0, VNOISE;
 //	R << Eigen::Matrix6f::Identity();
 //	h << Eigen::Matrix6f::Identity();
 //	H << Eigen::Matrix6f::Identity();

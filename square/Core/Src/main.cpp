@@ -130,11 +130,11 @@ void MoveToPoint(void* arg) {
 	vTaskDelay(1000);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-//		kf.update();
-//		boatState = kf.get_state();
+		kf.update();
+		boatState = kf.get_state();
 
 		// Calculate errors
-//		double distanceError = distanceBetweenStates(boatState, targetStates[targetCounter]);
+		double distanceError = distanceBetweenStates(boatState, targetStates[targetCounter]);
 //		double bearingError = bearingBetweenStates(boatState, targetStates[targetCounter]);
 		double bearingError = kf.get_bearing() - 270.0;
 
