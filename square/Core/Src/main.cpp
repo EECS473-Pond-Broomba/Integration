@@ -122,22 +122,26 @@ void MovePID(void* arg) {
 */
 // Moves to a target using basic error correction function
 void MoveToPoint(void* arg) {
+	gps_sem = xSemaphoreCreateBinary();
+	kf.init(&huart1, &hi2c1, KALMAN_REFRESH_TIME);
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
+	vTaskDelay(1000);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-		kf.update();
-		boatState = kf.get_state();
+//		kf.update();
+//		boatState = kf.get_state();
 
 		// Calculate errors
-		double distanceError = distanceBetweenStates(boatState, targetStates[targetCounter]);
-		double bearingError = bearingBetweenStates(boatState, targetStates[targetCounter]);
+//		double distanceError = distanceBetweenStates(boatState, targetStates[targetCounter]);
+//		double bearingError = bearingBetweenStates(boatState, targetStates[targetCounter]);
+		double bearingError = kf.get_bearing() - 270.0;
 
 		int pwml = 0;
 		int pwmr = 0;
 		// NOTE: Might have to negative bearingError
-		int bearingAdjustment = pow((0.1 * bearingError), 3);
+		int bearingAdjustment = pow((0.15 * bearingError), 3);
 		// Clamp bearing adjustment to +/-20
 		bearingAdjustment = bearingAdjustment > 20 ? 20 :
 							bearingAdjustment < -20 ? -20 :
@@ -147,11 +151,14 @@ void MoveToPoint(void* arg) {
 			int temp = pow(0.9 * distanceError, 3) + MOTORMIN;	// If distanceError is just under 5, set DC to around 260
 			pwml = temp;
 			pwmr = temp;
-			// Adjust speeds based on bearing error
 		}
 		else if(distanceError >= DISTSATURATE) {
 			pwml = MOTORMAX;
 			pwmr = MOTORMAX;
+		}
+		else if(distanceError <= DISTDEADZONE) {
+			pwml = MOTORMIN;
+			pwmr = MOTORMIN;
 		}
 
 		// NOTE: Might have to add bearingAdjustment to pwmr instead of pwml

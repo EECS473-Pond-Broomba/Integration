@@ -162,3 +162,7 @@ state_var SF_Nav::get_state() {
 								.vB = x_n(5)};
 	return current_state;
 }
+
+double SF_Nav::get_bearing() {
+	return imu.getOrientation(IMU::Axes::z);
+}

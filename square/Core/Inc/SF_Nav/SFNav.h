@@ -33,6 +33,7 @@ public:
 	void update();
 	state_var get_state();
 	GPS gps;
+	double get_bearing();
 
 private:
 	IMU imu;
