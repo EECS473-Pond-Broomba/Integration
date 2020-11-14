@@ -32,13 +32,13 @@ void motorInit(TIM_HandleTypeDef * htim1, TIM_HandleTypeDef * htim2,
 * takes in the pwm values for left and right pwm for each motor
 */
 void setSpeed(int pwm1, int pwm2, int pwm3, int pwm4){
-	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_4, pwm1);
+	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_1, pwm1);
 	pwml1 = pwm1;
-	__HAL_TIM_SetCompare(htiml2, TIM_CHANNEL_1, pwm2);
+	__HAL_TIM_SetCompare(htiml2, TIM_CHANNEL_3, pwm2);
 	pwml2 = pwm2;
-	__HAL_TIM_SetCompare(htimr1, TIM_CHANNEL_1, pwm3);
+	__HAL_TIM_SetCompare(htimr1, TIM_CHANNEL_3, pwm3);
 	pwmr1 = pwm3;
-	__HAL_TIM_SetCompare(htimr2, TIM_CHANNEL_1, pwm4);
+	__HAL_TIM_SetCompare(htimr2, TIM_CHANNEL_3, pwm4);
 	pwmr2 = pwm4;
 	HAL_Delay(100);
 }
@@ -73,10 +73,10 @@ void oppositeDirection(){
 Turns motors off by setting the pwm equal to 0
 */
 void stopMotors(){
-	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_4, 0);
-	__HAL_TIM_SetCompare(htiml2, TIM_CHANNEL_1, 0);
-	__HAL_TIM_SetCompare(htimr1, TIM_CHANNEL_1, 0);
-	__HAL_TIM_SetCompare(htimr2, TIM_CHANNEL_1, 0);
+	__HAL_TIM_SetCompare(htiml1, TIM_CHANNEL_1, 0);
+	__HAL_TIM_SetCompare(htiml2, TIM_CHANNEL_3, 0);
+	__HAL_TIM_SetCompare(htimr1, TIM_CHANNEL_3, 0);
+	__HAL_TIM_SetCompare(htimr2, TIM_CHANNEL_3, 0);
 	pwml1 = 0;
 	pwml2 = 0;
 	pwmr1 = 0;
