@@ -288,10 +288,10 @@ int main(void)
       					.vB = 0};
       targetStates.push_back(temp4);
 
-  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
+//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
 //  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
   vTaskStartScheduler();
 
