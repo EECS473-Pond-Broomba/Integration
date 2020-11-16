@@ -66,6 +66,7 @@ extern SF_Nav kf;
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim1;
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart6;
 extern TIM_HandleTypeDef htim11;
 
 /* USER CODE BEGIN EV */
@@ -200,6 +201,22 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART1_IRQn 1 */
 
   /* USER CODE END USART1_IRQn 1 */
+}
+
+void USART6_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART6_IRQn 0 */
+
+  /* USER CODE END USART6_IRQn 0 */
+  HAL_UART_IRQHandler(&huart6);
+  if(!kf.gps.has_data)
+      {
+    	  HAL_UART_Receive_IT(&huart6, (uint8_t*)kf.gps.data, GPS_MSG_SIZE);
+    	  kf.gps.has_data = true;
+      }
+  /* USER CODE BEGIN USART6_IRQn 1 */
+
+  /* USER CODE END USART6_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

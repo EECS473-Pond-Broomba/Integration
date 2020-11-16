@@ -36,7 +36,7 @@
 
 #define IMU_I2C_ADDR 0x28
 #define I2C_TIMEOUT 2
-#define SAMPLING_PERIOD 20							// Time step between storing
+#define SAMPLING_PERIOD 100							// Time step between storing
 #define ACCELERATION_TIME_STEP SAMPLING_PERIOD		// Time step between storing linear acceleration samples in ms
 #define ERROR_CHECK_PERIOD 10000					// Time between checking errors
 #define CALIB_STAT_PERIOD 2000						// Time between calibration status checks

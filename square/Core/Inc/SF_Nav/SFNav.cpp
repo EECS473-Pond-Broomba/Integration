@@ -68,15 +68,15 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	v << VNOISE,
 		VNOISE,
 		VNOISE,
-		VNOISE*5.0,
-		VNOISE*5.0,
+		VNOISE*10.0,
+		VNOISE*1.0,
 		VNOISE;
 	// Jacobian of w w.r.t states
 	V << VNOISE, 0, 0, 0, 0, 0,
 		 0, VNOISE, 0, 0, 0, 0,
 		 0, 0, VNOISE, 0, 0, 0,
-		 0, 0, 0, VNOISE*5.0, 0, 0,
-		 0, 0, 0, 0, VNOISE*5.0, 0,
+		 0, 0, 0, VNOISE*10.0, 0, 0,
+		 0, 0, 0, 0, VNOISE*1.0, 0,
 		 0, 0, 0, 0, 0, VNOISE;
 //	R << Eigen::Matrix6f::Identity();
 //	h << Eigen::Matrix6f::Identity();
@@ -98,6 +98,18 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 void SF_Nav::update()
 {
 	double dist, bearing, gpsBearing;
+	imu.calculateLinearVelocity();
+	bearing = imu.getOrientation(IMU::Axes::z);
+	u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
+			imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
+//	u_n <<  imu.getLinearAcceleration(IMU::Axes::x),
+//			imu.getLinearAcceleration(IMU::Axes::y);
+	// Step 1: Predicted mean
+	muu << x_n, u_n;	// Concatenate state at n-1 and actions
+	x_pred = f*muu;		// Get next predicted state
+
+	// Step 2: Predicted covariance
+	P_pred = F*P_pred*F.transpose()+W*Q*W.transpose();
 //	bearing = imu.getOrientation(IMU::Axes::z);
 //	vTaskDelay(500);
 	//Get inputs u_n and z_n
@@ -108,10 +120,10 @@ void SF_Nav::update()
 		if(prev_location.latitude < 0.1 && prev_location.latitude > -0.1) {
 			prev_location = curr_location;
 		}
-		imu.calculateLinearVelocity();
+//		imu.calculateLinearVelocity();
 		curr_vel = gps.getVelocity();
 		lwgps_distance_bearing(prev_location.latitude, prev_location.longitude, curr_location.latitude, curr_location.longitude, &dist, &gpsBearing);
-		bearing = imu.getOrientation(IMU::Axes::z);
+//		bearing = imu.getOrientation(IMU::Axes::z);
 		//Now convert the distance and bearing to and x and y
 //		state.x = state.x + sind(bearing)* dist;
 //		state.y = state.y + cosd(bearing)* dist;
@@ -121,8 +133,8 @@ void SF_Nav::update()
 //		state.vB = imu.getAngVel(IMU::Axes::z);
 
 		// Set u_n and z_n, turn IMU frame into world frame
-		u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
-				imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
+//		u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
+//				imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
 		z_n <<  x_n(0) + sind(bearing)* dist,
 				x_n(1) + cosd(bearing)* dist,
 				bearing,
@@ -131,11 +143,11 @@ void SF_Nav::update()
 				imu.getAngVel(IMU::Axes::z);
 
 		// Step 1: Predicted mean
-		muu << x_n, u_n;	// Concatenate state at n-1 and actions
-		x_pred = f*muu;		// Get next predicted state
+//		muu << x_n, u_n;	// Concatenate state at n-1 and actions
+//		x_pred = f*muu;		// Get next predicted state
 
 		// Step 2: Predicted covariance
-		P_pred = F*P_pred*F.transpose()+W*Q*W.transpose();
+//		P_pred = F*P_pred*F.transpose()+W*Q*W.transpose();
 
 		// Step 3: Innovation
 		y = z_n-x_pred;
