@@ -23,31 +23,13 @@
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
+#include "MCP3221/MCP3221.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+#define RELAY_PIN GPIO_PIN_13
+#define RELAY_PORT GPIOB
 
-/* USER CODE END Includes */
+MCP3221 bat_curr;
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -65,6 +47,30 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
+
+void checkBattery(void*)
+{
+	bat_curr.init(&hi2c3, 0x4f, 1);
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+	//Wait while bat_curr is less than 0.1 A
+	while(bat_curr.getCurrent() > 0.1);
+
+	//Now turn on the relay pin
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+
+	while(1)
+	{
+		//If current is ever greater than the limit than switch relay off
+		if(!bat_curr.checkCurrent())
+		{
+			//Disconnect relay and wait forever
+			HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+			//Just wait forever here
+			while(1);
+		}
+	}
+}
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -92,14 +98,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Init scheduler */
-  osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
-  MX_FREERTOS_Init();
-  /* Start scheduler */
-  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */

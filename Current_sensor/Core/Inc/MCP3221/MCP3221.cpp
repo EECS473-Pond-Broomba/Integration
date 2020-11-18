@@ -7,6 +7,7 @@
 
 #include <MCP3221/MCP3221.h>
 #include <cmath>
+#include <stdio.h>
 
 MCP3221::MCP3221() {
 
@@ -22,7 +23,6 @@ void MCP3221::init(I2C_HandleTypeDef* handle, uint8_t addr, uint8_t num)
 	i2c.init(handle, addr);
 
 	//Initialize samples array to 0
-	memset(samples, 0, sizeof(samples));
 	address = addr;
 	numSamples = num;
 }
@@ -40,6 +40,11 @@ unsigned int MCP3221::getRawVoltage()
 float MCP3221::getCurrent()
 {
 	return (getRawVoltage()-OFFSET_VOLTS)/sensitivity;
+}
+
+bool MCP3221::checkCurrent()
+{
+	return (getCurrent() < CURRENT_LIMIT);
 }
 
 
