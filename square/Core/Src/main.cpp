@@ -60,6 +60,8 @@ uint8_t Is_First_Captured = 0;
 uint8_t buf[20];
 uint32_t value[2];
 
+
+
 #define PIDPERIOD 500
 #define MOTORMAXDIFF 20
 #define MOTORMIN 150 + MOTORMAXDIFF
@@ -263,7 +265,7 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setSpeed(150, 150, 150, 150);
+	setSpeed(150, 0, 150, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -357,10 +359,10 @@ int main(void)
       					.vB = 0};
       targetStates.push_back(temp4);
 
-  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
+//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
 //  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
   vTaskStartScheduler();
