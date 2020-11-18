@@ -48,6 +48,7 @@ void MX_FREERTOS_Init(void);
   * @retval int
   */
 
+//THIS SHOULD BE HIGHEST PRIORITY TASK
 void checkBattery(void*)
 {
 	bat_curr.init(&hi2c3, 0x4f, 1);
@@ -68,6 +69,7 @@ void checkBattery(void*)
 			//Just wait forever here
 			while(1);
 		}
+		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
 
