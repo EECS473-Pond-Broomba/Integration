@@ -44,8 +44,8 @@ I2C_HandleTypeDef hi2c3;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim5;
-TIM_HandleTypeDef htim9;
+//TIM_HandleTypeDef htim5;
+//TIM_HandleTypeDef htim9;
 
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart6;
@@ -83,8 +83,8 @@ void MX_I2C3_Init(void);
 void MX_TIM2_Init(void);
 void MX_TIM3_Init(void);
 void MX_ADC1_Init(void);
-void MX_TIM5_Init(void);
-void MX_TIM9_Init(void);
+//void MX_TIM5_Init(void);
+//void MX_TIM9_Init(void);
 void MX_USART6_UART_Init(void);
 void MX_FREERTOS_Init(void);
 double distanceBetweenStates(state_var &state1, state_var &state2) {
@@ -101,13 +101,15 @@ void checkBattery(void*)
 	bat_curr.init(&hi2c3, 0x4f, 1);
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 	//Wait while bat_curr is less than 0.1 A
-	while(bat_curr.getCurrent() > 0.1);
+	while(bat_curr.getCurrent() < 0.1);
 
 	//Now turn on the relay pin
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
 
 	while(1)
 	{
+		float dummyV = bat_curr.getRawVoltage();
+		float dummyC = bat_curr.getCurrent();
 		//If current is ever greater than the limit than switch relay off
 		if(!bat_curr.checkCurrent())
 		{
@@ -124,25 +126,25 @@ float timedifference_msec(struct timeval t0, struct timeval t1){
   return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
 }
 
-void ServoOpen() {
-	for(pwm=4;pwm<23;pwm++) {
-	  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
-	  sprintf((char*)buf, "%u pwm\r\n", (unsigned int)pwm);
-	  HAL_UART_Transmit(&huart6, buf, 20, HAL_MAX_DELAY);
-	  HAL_Delay(100);
-	}
-	HAL_Delay(200);
-}
-
-void ServoClose() {
-  for(pwm=22;pwm>=4;pwm--) {
-	  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
-	  sprintf((char*)buf, "%u pwm\r\n", (unsigned int)pwm);
-	  HAL_UART_Transmit(&huart6, buf, 20, HAL_MAX_DELAY);
-	  HAL_Delay(100);
-  }
-  HAL_Delay(200);
-}
+//void ServoOpen() {
+//	for(pwm=4;pwm<23;pwm++) {
+//	  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
+//	  sprintf((char*)buf, "%u pwm\r\n", (unsigned int)pwm);
+//	  HAL_UART_Transmit(&huart6, buf, 20, HAL_MAX_DELAY);
+//	  HAL_Delay(100);
+//	}
+//	HAL_Delay(200);
+//}
+//
+//void ServoClose() {
+//  for(pwm=22;pwm>=4;pwm--) {
+//	  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
+//	  sprintf((char*)buf, "%u pwm\r\n", (unsigned int)pwm);
+//	  HAL_UART_Transmit(&huart6, buf, 20, HAL_MAX_DELAY);
+//	  HAL_Delay(100);
+//  }
+//  HAL_Delay(200);
+//}
 
 void Sensors(void* arg) {
 	TickType_t xLastWakeTime;
@@ -175,8 +177,8 @@ void Sensors(void* arg) {
 
   		  // Pretend we have to do something else for a while
   		  HAL_Delay(100);
-  		  ServoOpen();
-  		  ServoClose();
+//  		  ServoOpen();
+//  		  ServoClose();
 
   }
 }
@@ -266,7 +268,7 @@ void MoveToPoint(void* arg) {
 		}
 
 		// NOTE: Might have to add bearingAdjustment to pwmr instead of pwml
-		setSpeed(0, pwml + bearingAdjustment, 0, pwmr);
+		setSpeed(pwml + bearingAdjustment, pwmr);
 	}
 }
 
@@ -298,7 +300,7 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setSpeed(150, 0, 150, 0);
+	setSpeed(150, 200);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -350,19 +352,19 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
-  MX_TIM5_Init();
-  MX_TIM9_Init();
+//  MX_TIM5_Init();
+//  MX_TIM9_Init();
   MX_USART2_UART_Init();
   MX_USART6_UART_Init();
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+//  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3);
+//  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);
   //NEEDS TO CHANGE//
-  __HAL_TIM_SetCompare(&htim2, TIM_CHANNEL_1, 0);
-  __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 0);
-  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
-  motorInit(&htim2, &htim5, &htim3, &htim5);
+  __HAL_TIM_SetCompare(&htim2, TIM_CHANNEL_3, 0);
+  __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 0);
+//  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
+  motorInit(&htim2, &htim3);
 
   // Set up path
   state_var temp1 = { .x = 0,
@@ -400,7 +402,7 @@ int main(void)
   xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 0, NULL);
+//  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 0, NULL);
   vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
@@ -615,91 +617,91 @@ void MX_TIM3_Init(void)
   * @param None
   * @retval None
   */
-void MX_TIM5_Init(void)
-{
-
-  /* USER CODE BEGIN TIM5_Init 0 */
-
-  /* USER CODE END TIM5_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM5_Init 1 */
-
-  /* USER CODE END TIM5_Init 1 */
-  htim5.Instance = TIM5;
-  htim5.Init.Prescaler = 4;
-  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 690;
-  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim5) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim5, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM5_Init 2 */
-
-  /* USER CODE END TIM5_Init 2 */
-  HAL_TIM_MspPostInit(&htim5);
-
-}
+//void MX_TIM5_Init(void)
+//{
+//
+//  /* USER CODE BEGIN TIM5_Init 0 */
+//
+//  /* USER CODE END TIM5_Init 0 */
+//
+//  TIM_MasterConfigTypeDef sMasterConfig = {0};
+//  TIM_OC_InitTypeDef sConfigOC = {0};
+//
+//  /* USER CODE BEGIN TIM5_Init 1 */
+//
+//  /* USER CODE END TIM5_Init 1 */
+//  htim5.Instance = TIM5;
+//  htim5.Init.Prescaler = 4;
+//  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+//  htim5.Init.Period = 690;
+//  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+//  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+//  if (HAL_TIM_PWM_Init(&htim5) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+//  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+//  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+//  sConfigOC.Pulse = 0;
+//  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+//  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+//  if (HAL_TIM_PWM_ConfigChannel(&htim5, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /* USER CODE BEGIN TIM5_Init 2 */
+//
+//  /* USER CODE END TIM5_Init 2 */
+//  HAL_TIM_MspPostInit(&htim5);
+//
+//}
 
 /**
   * @brief TIM9 Initialization Function
   * @param None
   * @retval None
   */
-void MX_TIM9_Init(void)
-{
-
-  /* USER CODE BEGIN TIM9_Init 0 */
-
-  /* USER CODE END TIM9_Init 0 */
-
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM9_Init 1 */
-
-  /* USER CODE END TIM9_Init 1 */
-  htim9.Instance = TIM9;
-  htim9.Init.Prescaler = 9333;
-  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim9.Init.Period = 180;
-  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim9) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim9, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM9_Init 2 */
-
-  /* USER CODE END TIM9_Init 2 */
-  HAL_TIM_MspPostInit(&htim9);
-
-}
+//void MX_TIM9_Init(void)
+//{
+//
+//  /* USER CODE BEGIN TIM9_Init 0 */
+//
+//  /* USER CODE END TIM9_Init 0 */
+//
+//  TIM_OC_InitTypeDef sConfigOC = {0};
+//
+//  /* USER CODE BEGIN TIM9_Init 1 */
+//
+//  /* USER CODE END TIM9_Init 1 */
+//  htim9.Instance = TIM9;
+//  htim9.Init.Prescaler = 9333;
+//  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
+//  htim9.Init.Period = 180;
+//  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+//  htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+//  if (HAL_TIM_PWM_Init(&htim9) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+//  sConfigOC.Pulse = 0;
+//  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+//  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+//  if (HAL_TIM_PWM_ConfigChannel(&htim9, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /* USER CODE BEGIN TIM9_Init 2 */
+//
+//  /* USER CODE END TIM9_Init 2 */
+//  HAL_TIM_MspPostInit(&htim9);
+//
+//}
 
 void MX_USART2_UART_Init(void)
 {
