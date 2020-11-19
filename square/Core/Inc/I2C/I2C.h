@@ -25,8 +25,10 @@ public:
 	HAL_StatusTypeDef write8(uint8_t reg, uint8_t val);
 
 	int8_t read8(uint8_t reg);
+	int8_t read8();
 
 	int16_t read16(uint8_t reg);
+	int16_t read16();
 
 private:
 	I2C_HandleTypeDef* hi2c;

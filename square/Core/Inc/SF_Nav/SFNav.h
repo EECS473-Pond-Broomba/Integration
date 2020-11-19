@@ -7,7 +7,7 @@
 
 #ifndef INC_SF_NAV_SFNAV_H_
 #define INC_SF_NAV_SFNAV_H_
-
+#define LOGLENGTH 200
 #include "IMU/IMU.h"
 #include "GPS/GPS.h"
 #include "Eigen/Dense"
@@ -49,6 +49,9 @@ private:
 	location curr_location, prev_location;
 	velocity curr_vel, prev_vel;
 	state_var state;
+	double xPosLog[LOGLENGTH];
+	double yPosLog[LOGLENGTH];
+	int posCtr = 0;
 
 	inline double sind(double x)
 	{

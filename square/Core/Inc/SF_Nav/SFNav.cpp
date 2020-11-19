@@ -10,6 +10,8 @@
 #define WNOISE 0.1
 #define VNOISE 0.1
 
+
+
 SF_Nav::SF_Nav() {
 	// TODO Auto-generated constructor stub
 	gps.has_data = false;
@@ -53,14 +55,14 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	w << WNOISE,
 		WNOISE,
 		WNOISE,
-		WNOISE,
+		WNOISE*10.0,
 		WNOISE,
 		WNOISE;
 	// Jacobian of w w.r.t states
 	W << WNOISE, 0, 0, 0, 0, 0,
 		 0, WNOISE, 0, 0, 0, 0,
 		 0, 0, WNOISE, 0, 0, 0,
-		 0, 0, 0, WNOISE, 0, 0,
+		 0, 0, 0, WNOISE*10.0, 0, 0,
 		 0, 0, 0, 0, WNOISE, 0,
 		 0, 0, 0, 0, 0, WNOISE;
 //	Q << Eigen::Matrix6f::Identity();
@@ -98,7 +100,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 void SF_Nav::update()
 {
 	double dist, bearing, gpsBearing;
-	imu.calculateLinearVelocity();
+//	imu.calculateLinearVelocity();
 	bearing = imu.getOrientation(IMU::Axes::z);
 	u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
 			imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
@@ -163,6 +165,12 @@ void SF_Nav::update()
 
 		// Step 7: Corrected covariance
 		P_n = (I-K_n*H)*P_pred;
+
+		if(posCtr < LOGLENGTH) {
+			xPosLog[posCtr] = x_n(0);
+			yPosLog[posCtr] = x_n(1);
+			posCtr++;
+		}
 	}
 }
 

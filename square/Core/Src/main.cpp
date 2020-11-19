@@ -31,20 +31,27 @@
 #include "semphr.h"
 #include "FreeRTOS.h"
 #include <vector>
+#include "MCP3221/MCP3221.h"
+
+#define RELAY_PIN GPIO_PIN_13
+#define RELAY_PORT GPIOB
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c3;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim9;
 
+UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart6;
 
 xSemaphoreHandle gps_sem;
+MCP3221 bat_curr;
 SF_Nav kf;
 state_var boatState;		// Stores current state of the boat
 std::vector<state_var> targetStates;	// States that we want boat to be at
@@ -72,6 +79,7 @@ uint32_t value[2];
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_I2C1_Init(void);
+void MX_I2C3_Init(void);
 void MX_TIM2_Init(void);
 void MX_TIM3_Init(void);
 void MX_ADC1_Init(void);
@@ -87,6 +95,31 @@ double bearingBetweenStates(state_var &state1, state_var &state2) {
 }
 
 // ---------------------------- Our Tasks --------------------------------------
+//THIS SHOULD BE HIGHEST PRIORITY TASK
+void checkBattery(void*)
+{
+	bat_curr.init(&hi2c3, 0x4f, 1);
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+	//Wait while bat_curr is less than 0.1 A
+	while(bat_curr.getCurrent() > 0.1);
+
+	//Now turn on the relay pin
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+
+	while(1)
+	{
+		//If current is ever greater than the limit than switch relay off
+		if(!bat_curr.checkCurrent())
+		{
+			//Disconnect relay and wait forever
+			HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+			//Just wait forever here
+			while(1);
+		}
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
 float timedifference_msec(struct timeval t0, struct timeval t1){
   return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
 }
@@ -313,11 +346,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
+  MX_I2C3_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_TIM5_Init();
   MX_TIM9_Init();
+  MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
@@ -365,6 +400,7 @@ int main(void)
   xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
+  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 0, NULL);
   vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
@@ -662,6 +698,24 @@ void MX_TIM9_Init(void)
 
   /* USER CODE END TIM9_Init 2 */
   HAL_TIM_MspPostInit(&htim9);
+
+}
+
+void MX_USART2_UART_Init(void)
+{
+
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
 }
 
