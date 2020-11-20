@@ -34,12 +34,16 @@ unsigned int MCP3221::getRawData()
 
 unsigned int MCP3221::getRawVoltage()
 {
-	return round(vRef * getRawData()/(0xFFFF));
+	unsigned int temp = getRawData();
+	if(temp > 4000) {
+		return OFFSET_VOLTS;
+	}
+	return round(vRef * getRawData()/(float)(0xFFF));
 }
 
 float MCP3221::getCurrent()
 {
-	return (getRawVoltage()-OFFSET_VOLTS)/sensitivity;
+	return ((float)getRawVoltage()-OFFSET_VOLTS)/sensitivity;
 }
 
 bool MCP3221::checkCurrent()

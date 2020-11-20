@@ -86,6 +86,6 @@ int16_t I2C::read16()
 	}
 	// The LSB is always at the lower register address, so cast buffer[0] into 16 bits and shift it left by 8
 	// And then OR with MSB to combine into 2 bytes
-	int16_t value = (((uint16_t)buffer[1]) << 8) | (uint16_t)buffer[0];
+	int16_t value = (((uint16_t)buffer[0]) << 8) | (uint16_t)buffer[1];
 	return value;
 }

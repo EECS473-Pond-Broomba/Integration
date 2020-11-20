@@ -34,9 +34,6 @@
 #include "MCP3221/MCP3221.h"
 #include "tim.h"
 
-#define RELAY_PIN GPIO_PIN_13
-#define RELAY_PORT GPIOB
-
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
@@ -148,13 +145,13 @@ void Sensors(void* arg) {
   		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
 
   		  // Pretend we have to do something else for a while
-  		  HAL_Delay(100);
+//  		  HAL_Delay(100);
+  		  vTaskDelay(pdMS_TO_TICKS(100));
 //  		  ServoOpen();
 //  		  ServoClose();
 
   }
 }
-
 /*
 // Moves to a target state using PID like a noob
 void MovePID(void* arg) {
@@ -278,11 +275,12 @@ void checkBattery(void*)
 
 	//Now turn on the relay pin
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+	vTaskDelay(pdMS_TO_TICKS(5));
 
 	while(1)
 	{
-		float dummyV = bat_curr.getRawVoltage();
-		float dummyC = bat_curr.getCurrent();
+//		float dummyV = bat_curr.getRawVoltage();
+//		float dummyC = bat_curr.getCurrent();
 		//If current is ever greater than the limit than switch relay off
 		if(!bat_curr.checkCurrent())
 		{
@@ -291,7 +289,7 @@ void checkBattery(void*)
 			//Just wait forever here
 			while(1);
 		}
-		vTaskDelay(pdMS_TO_TICKS(1000));
+		vTaskDelay(pdMS_TO_TICKS(100));
 	}
 }
 
@@ -300,7 +298,7 @@ void TestMotors(void* arg) {
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
 	setDirection(true);	// Go forward
-	setSpeed(600, 600);
+	setSpeed(700, 720);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -399,12 +397,12 @@ int main(void)
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
 //  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 0, NULL);
+  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 3, NULL);
   vTaskStartScheduler();
-
+//
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */

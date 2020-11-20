@@ -75,10 +75,18 @@ void changeDirection(int degreeTurn){
 Causes the motors to move forward or backward based on current GPIO Pin State
 */
 void setDirection(bool forward){
-	HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, (GPIO_PinState)!forward);
-	HAL_GPIO_WritePin(IN4_GPIO_Port, IN4_Pin, (GPIO_PinState)!forward);
-	HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, (GPIO_PinState)forward);
-	HAL_GPIO_WritePin(IN3_GPIO_Port, IN3_Pin, (GPIO_PinState)forward);
+	if(forward) {
+		HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(IN4_GPIO_Port, IN4_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(IN3_GPIO_Port, IN3_Pin, GPIO_PIN_RESET);
+	}
+	else {
+		HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(IN4_GPIO_Port, IN4_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(IN3_GPIO_Port, IN3_Pin, GPIO_PIN_SET);
+	}
 }
 
 /*
