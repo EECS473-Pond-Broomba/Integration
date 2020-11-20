@@ -152,7 +152,7 @@ void Sensors(void* arg) {
 
   }
 }
-/*
+
 // Moves to a target state using PID like a noob
 void MovePID(void* arg) {
 	TickType_t xLastWakeTime;
@@ -168,8 +168,11 @@ void MovePID(void* arg) {
 	int bKp = 1;
 	int bKi = 1;
 	int bKd = 1;
+	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		kf.update();
+		boatState = kf.get_state();
 		// Calculate error between current and set point
 		double newDError = distanceBetweenStates(boatState, targetStates[targetCounter]);
 		double newBError = bearingBetweenStates(boatState, targetStates[targetCounter]);
@@ -194,11 +197,11 @@ void MovePID(void* arg) {
 		bIntegral = newBIntegral;
 	}
 }
-*/
+
 // Moves to a target using basic error correction function
 void MoveToPoint(void* arg) {
 	gps_sem = xSemaphoreCreateBinary();
-//	kf.init(&huart1, &hi2c1, KALMAN_REFRESH_TIME);
+	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
@@ -297,7 +300,7 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setDirection(true);	// Go forward
+	setDirection(true, true);	// Go forward
 	setSpeed(700, 720);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
@@ -400,7 +403,7 @@ int main(void)
   xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 3, NULL);
+  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
   /* We should never get here as control is now taken by the scheduler */
