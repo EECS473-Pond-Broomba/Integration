@@ -29,6 +29,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -50,8 +51,6 @@ extern "C" {
 
 /* USER CODE END EM */
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -64,6 +63,14 @@ void Error_Handler(void);
 #define B1_GPIO_Port GPIOC
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define IN1_Pin GPIO_PIN_4
+#define IN1_GPIO_Port GPIOC
+#define IN2_Pin GPIO_PIN_5
+#define IN2_GPIO_Port GPIOC
+#define IN3_Pin GPIO_PIN_0
+#define IN3_GPIO_Port GPIOB
+#define IN4_Pin GPIO_PIN_1
+#define IN4_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

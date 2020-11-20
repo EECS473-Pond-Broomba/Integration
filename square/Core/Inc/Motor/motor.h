@@ -2,6 +2,7 @@
 #define INC_MOTOR_MOTOR_H_
 
 #include "stm32f4xx_hal.h"
+#include "main.h"
 
 #define MIN 78
 #define MEDIUM 85
@@ -41,7 +42,7 @@ void setSpeed(int pwm1, int pwm2){
 	pwml1 = pwm1;
 	__HAL_TIM_SetCompare(htimr1, TIM_CHANNEL_2, pwm2);
 	pwmr1 = pwm2;
-	HAL_Delay(100);
+//	HAL_Delay(100);
 }
 
 /*
@@ -73,17 +74,11 @@ void changeDirection(int degreeTurn){
 /*
 Causes the motors to move forward or backward based on current GPIO Pin State
 */
-void oppositeDirection(){
-//	int temp1;
-//	int temp2;
-//
-//	temp1 = pwmr1;
-//	temp2 = pwml1;
-//
-//	pwmr1 = pwmr2;
-//	pwml1 = pwml2;
-//	pwmr2 = temp1;
-//	pwml2 = temp2;
+void setDirection(bool forward){
+	HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, (GPIO_PinState)!forward);
+	HAL_GPIO_WritePin(IN4_GPIO_Port, IN4_Pin, (GPIO_PinState)!forward);
+	HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, (GPIO_PinState)forward);
+	HAL_GPIO_WritePin(IN3_GPIO_Port, IN3_Pin, (GPIO_PinState)forward);
 }
 
 /*
@@ -98,7 +93,7 @@ void stopMotors(){
 //	pwml2 = 0;
 	pwmr1 = 0;
 //	pwmr2 = 0;
-	HAL_Delay(100);
+//	HAL_Delay(100);
 }
 
 #endif /* INC_MOTOR_MOTOR_H_ */

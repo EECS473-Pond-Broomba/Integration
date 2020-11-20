@@ -27,11 +27,12 @@
 #include "GPS/GPS.h"
 #include "IMU/IMU.h"
 #include "SF_Nav/SFNav.h"
-#include "uart_printf.h"
+//#include "uart_printf.h"
 #include "semphr.h"
 #include "FreeRTOS.h"
 #include <vector>
 #include "MCP3221/MCP3221.h"
+#include "tim.h"
 
 #define RELAY_PIN GPIO_PIN_13
 #define RELAY_PORT GPIOB
@@ -80,8 +81,6 @@ uint32_t value[2];
 void SystemClock_Config(void);
 void MX_I2C1_Init(void);
 void MX_I2C3_Init(void);
-void MX_TIM2_Init(void);
-void MX_TIM3_Init(void);
 void MX_ADC1_Init(void);
 //void MX_TIM5_Init(void);
 //void MX_TIM9_Init(void);
@@ -95,33 +94,6 @@ double bearingBetweenStates(state_var &state1, state_var &state2) {
 }
 
 // ---------------------------- Our Tasks --------------------------------------
-//THIS SHOULD BE HIGHEST PRIORITY TASK
-void checkBattery(void*)
-{
-	bat_curr.init(&hi2c3, 0x4f, 1);
-	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
-	//Wait while bat_curr is less than 0.1 A
-	while(bat_curr.getCurrent() < 0.1);
-
-	//Now turn on the relay pin
-	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
-
-	while(1)
-	{
-		float dummyV = bat_curr.getRawVoltage();
-		float dummyC = bat_curr.getCurrent();
-		//If current is ever greater than the limit than switch relay off
-		if(!bat_curr.checkCurrent())
-		{
-			//Disconnect relay and wait forever
-			HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
-			//Just wait forever here
-			while(1);
-		}
-		vTaskDelay(pdMS_TO_TICKS(1000));
-	}
-}
-
 float timedifference_msec(struct timeval t0, struct timeval t1){
   return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
 }
@@ -229,7 +201,7 @@ void MovePID(void* arg) {
 // Moves to a target using basic error correction function
 void MoveToPoint(void* arg) {
 	gps_sem = xSemaphoreCreateBinary();
-	kf.init(&huart1, &hi2c1, KALMAN_REFRESH_TIME);
+//	kf.init(&huart1, &hi2c1, KALMAN_REFRESH_TIME);
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
@@ -296,11 +268,39 @@ void UpdateKF(void* arg) {
 	}
 }
 
+//THIS SHOULD BE HIGHEST PRIORITY TASK
+void checkBattery(void*)
+{
+	bat_curr.init(&hi2c3, 0x4f, 1);
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+	//Wait while bat_curr is less than 0.1 A
+	while(bat_curr.getCurrent() < 0.1);
+
+	//Now turn on the relay pin
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+
+	while(1)
+	{
+		float dummyV = bat_curr.getRawVoltage();
+		float dummyC = bat_curr.getCurrent();
+		//If current is ever greater than the limit than switch relay off
+		if(!bat_curr.checkCurrent())
+		{
+			//Disconnect relay and wait forever
+			HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+			//Just wait forever here
+			while(1);
+		}
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
 void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setSpeed(150, 200);
+	setDirection(true);	// Go forward
+	setSpeed(600, 600);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -354,7 +354,7 @@ int main(void)
   MX_ADC1_Init();
 //  MX_TIM5_Init();
 //  MX_TIM9_Init();
-  MX_USART2_UART_Init();
+//  MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -399,10 +399,10 @@ int main(void)
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
 //  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
-  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+//  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-//  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 0, NULL);
+  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 0, NULL);
   vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
@@ -511,104 +511,6 @@ void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
-
-}
-
-/**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-void MX_TIM2_Init(void)
-{
-
-  /* USER CODE BEGIN TIM2_Init 0 */
-
-  /* USER CODE END TIM2_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM2_Init 1 */
-
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 4;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 690;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
-
-  /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
-
-}
-
-/**
-  * @brief TIM3 Initialization Function
-  * @param None
-  * @retval None
-  */
-void MX_TIM3_Init(void)
-{
-
-  /* USER CODE BEGIN TIM3_Init 0 */
-
-  /* USER CODE END TIM3_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM3_Init 1 */
-
-  /* USER CODE END TIM3_Init 1 */
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 4;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 690;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM3_Init 2 */
-
-  /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
 
 }
 
