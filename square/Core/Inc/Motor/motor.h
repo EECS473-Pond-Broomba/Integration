@@ -1,8 +1,8 @@
-#ifndef INC_MOTOR_MOTOR_H_
-#define INC_MOTOR_MOTOR_H_
+#ifndef MOTOR_INC_H
+#define MOTOR_INC_H
 
 #include "stm32f4xx_hal.h"
-#include "main.h"
+#include "tim.h"
 
 #define MIN 78
 #define MEDIUM 85

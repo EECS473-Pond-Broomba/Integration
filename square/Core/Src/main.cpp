@@ -18,7 +18,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "Motor/motor.h"
+#include "Controller/controller.h"
 #include "main.h"
 #include "cmsis_os.h"
 #include "i2c.h"
@@ -240,7 +240,7 @@ void MoveToPoint(void* arg) {
 		}
 
 		// NOTE: Might have to add bearingAdjustment to pwmr instead of pwml
-		setSpeed(pwml + bearingAdjustment, pwmr);
+		//setSpeed(pwml + bearingAdjustment, pwmr);
 	}
 }
 
@@ -300,8 +300,8 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	setDirection(true, true);	// Go forward
-	setSpeed(700, 720);
+	//setDirection(true, true);	// Go forward
+	//setSpeed(700, 720);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -313,7 +313,7 @@ void TurnBoat(void* arg) {
 	xLastWakeTime = xTaskGetTickCount();
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-		changeDirection(15);
+		//changeDirection(15);
 		vTaskDelay(500);
 	}
 }
@@ -365,7 +365,7 @@ int main(void)
   __HAL_TIM_SetCompare(&htim2, TIM_CHANNEL_3, 0);
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 0);
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
-  motorInit(&htim2, &htim3);
+  //motorInit(&htim2, &htim3);
 
   // Set up path
   state_var temp1 = { .x = 0,
