@@ -46,6 +46,10 @@ public:
     void updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t bear);
     void updatePidPosition(int16_t x_curr, int16_t y_curr, uint16_t bear);
     
+    void setMotorSpeed(int pwm1, int pwm2);
+
+    void setMotorDirection(bool left_forward, bool right_forward);
+
 private:
     uint16_t old_distance, old_bearing;
     int16_t targetX, targetY;

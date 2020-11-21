@@ -51,9 +51,12 @@ UART_HandleTypeDef huart6;
 xSemaphoreHandle gps_sem;
 MCP3221 bat_curr;
 SF_Nav kf;
+controller cont;
 state_var boatState;		// Stores current state of the boat
 std::vector<state_var> targetStates;	// States that we want boat to be at
+std::vector<state_var> testStates;
 int targetCounter = 0;
+int stateCounter = 0;
 int pwm1 = 0;
 int pwm2 = 0;
 
@@ -67,7 +70,7 @@ uint32_t value[2];
 
 
 
-#define PIDPERIOD 500
+//#define PIDPERIOD 500
 #define MOTORMAXDIFF 20
 #define MOTORMIN 150 + MOTORMAXDIFF
 #define MOTORMAX 250 - MOTORMAXDIFF
@@ -156,45 +159,37 @@ void Sensors(void* arg) {
 // Moves to a target state using PID like a noob
 void MovePID(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(PIDPERIOD);
+	const TickType_t xPeriod = pdMS_TO_TICKS(PID_UPDATE_TIME);
 	xLastWakeTime = xTaskGetTickCount();
-	double dError = 0;
-	double bError = 0;
-	double dIntegral = 0;
-	double bIntegral = 0;
-	int dKp = 1;
-	int dKi = 1;
-	int dKd = 1;
-	int bKp = 1;
-	int bKi = 1;
-	int bKd = 1;
-	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
+	cont.init();
+//	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
+	cont.setTarget(5, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-		kf.update();
-		boatState = kf.get_state();
-		// Calculate error between current and set point
-		double newDError = distanceBetweenStates(boatState, targetStates[targetCounter]);
-		double newBError = bearingBetweenStates(boatState, targetStates[targetCounter]);
-		// Riemann sum basically
-		double newDIntegral = dIntegral + newDError * PIDPERIOD;
-		double newBIntegral = bIntegral + newBError * PIDPERIOD;
-		// Basic slope calculation
-		double newDDerivative = (newDError - dError) / PIDPERIOD;
-		double newBDerivative = (newBError - bError) / PIDPERIOD;
+//		kf.update();
+//		boatState = kf.get_state();
+		if(stateCounter < 10) {
+			boatState = testStates[stateCounter++];
+			cont.updatePidPosition(boatState.x, boatState.y, boatState.b);
+		}
+	}
+}
 
-		// TODO: Set pwm duty cycles
-		// I need a range of duty cycles that we are working with
-		double dOutput = dKp*newDError + dKi*newDIntegral + dKd*newDDerivative;
-		double bOutput = bKp*newBError + bKi*newBIntegral + bKd*newBDerivative;
-		// Calculate one for distance and one for bearing, then add/superimpose them
-		// onto each other to get final pwm duty cycles
-
-		// Update values
-		dError = newDError;
-		bError = newBError;
-		dIntegral = newDIntegral;
-		bIntegral = newBIntegral;
+void MoveLinear(void* arg) {
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(PID_UPDATE_TIME);
+	xLastWakeTime = xTaskGetTickCount();
+	cont.init();
+//	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
+	cont.setTarget(5, 0);
+	while(1) {
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+//		kf.update();
+//		boatState = kf.get_state();
+		if(stateCounter < 10) {
+			boatState = testStates[stateCounter++];
+			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+		}
 	}
 }
 
@@ -274,7 +269,7 @@ void checkBattery(void*)
 	bat_curr.init(&hi2c3, 0x4f, 1);
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 	//Wait while bat_curr is less than 0.1 A
-	while(bat_curr.getCurrent() < 0.1);
+//	while(bat_curr.getCurrent() < 0.1);
 
 	//Now turn on the relay pin
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
@@ -282,15 +277,17 @@ void checkBattery(void*)
 
 	while(1)
 	{
-//		float dummyV = bat_curr.getRawVoltage();
-//		float dummyC = bat_curr.getCurrent();
+		float dummyV = bat_curr.getRawVoltage();
+		float dummyC = bat_curr.getCurrent();
 		//If current is ever greater than the limit than switch relay off
 		if(!bat_curr.checkCurrent())
 		{
-			//Disconnect relay and wait forever
-			HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
-			//Just wait forever here
-			while(1);
+			if(!bat_curr.checkCurrent()) {
+				//Disconnect relay and wait forever
+				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+				//Just wait forever here
+				while(1);
+			}
 		}
 		vTaskDelay(pdMS_TO_TICKS(100));
 	}
@@ -300,8 +297,9 @@ void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	//setDirection(true, true);	// Go forward
-	//setSpeed(700, 720);
+	cont.init();
+	cont.setMotorDirection(true, true);	// Go forward
+//	cont.setMotorSpeed(500, 520);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -367,43 +365,24 @@ int main(void)
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
 
-  // Set up path
-  state_var temp1 = { .x = 0,
-  					.y = 1,
-  					.b = 0,
-					.vX = 0,
-					.vY = 0,
-					.vB = 0};
-  targetStates.push_back(temp1);
-  state_var temp2 = { .x = 1,
-    					.y = 1,
-    					.b = 0,
-  					.vX = 0,
-  					.vY = 0,
-  					.vB = 0};
-  targetStates.push_back(temp2);
-  state_var temp3 = { .x = 1,
-      					.y = 0,
-      					.b = 0,
-    					.vX = 0,
-    					.vY = 0,
-    					.vB = 0};
-    targetStates.push_back(temp3);
-    state_var temp4 = { .x = 0,
-        					.y = 0,
-        					.b = 0,
-      					.vX = 0,
-      					.vY = 0,
-      					.vB = 0};
-      targetStates.push_back(temp4);
-
-//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 0, NULL);
-//  xTaskCreate(MovePID, "pid", 256, NULL, 1, NULL);
+  // Setup artificial boat states
+  for(int i = 0; i < 10; ++i) {
+	  state_var temp = { 	.x = 0.5*(double)i,
+	    					.y = 0,
+	    					.b = 90,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+//  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
+//  xTaskCreate(MoveLinear, "chad", 1024, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
-  xTaskCreate(TestMotors, "testMotors", 128, NULL, 1, NULL);
+//  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(checkBattery, "currentSensor", 128, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
+  xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
   /* We should never get here as control is now taken by the scheduler */
