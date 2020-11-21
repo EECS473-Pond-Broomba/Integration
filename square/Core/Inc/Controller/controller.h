@@ -21,6 +21,7 @@
 
 #define PID_UPDATE_TIME 1000
 
+#define USE_PID 0 //Selecte between linear or pid. 0 = LIN, 1 = PID
 
 class controller
 {
@@ -31,6 +32,17 @@ public:
     void init();
 
     void setTarget(int16_t x, int16_t y);
+    void update(int16_t x_curr, int16_t y_curr, uint16_t bear)
+    {
+    	if(USE_PID)
+    	{
+    		updatePidPosition(x_curr, y_curr, bear);
+    	}
+    	else
+    	{
+    		updateLinearPosition(x_curr, y_curr, bear);
+    	}
+    }
     void updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t bear);
     void updatePidPosition(int16_t x_curr, int16_t y_curr, uint16_t bear);
     
