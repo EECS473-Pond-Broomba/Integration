@@ -25,11 +25,11 @@ void controller::updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t b
 {
     int16_t bearingError = calculate_bearing(x_curr, y_curr) - bear;
     if(bearingError > WIDE_ANG) {
-        setDirection(false, true);
+        setDirection(true, false);
         setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
     }
     else if(bearingError < -WIDE_ANG) {
-        setDirection(true, false);
+        setDirection(false, true);
         setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
     }
     // No point turn needed

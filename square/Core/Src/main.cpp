@@ -76,6 +76,7 @@ uint32_t value[2];
 #define MOTORMAX 250 - MOTORMAXDIFF
 #define DISTDEADZONE 0.3	// If robot is within this distance of target, motors dont move
 #define DISTSATURATE 5		// If robot is further than this distance of target, motors move at maximum speed
+#define TESTDELAY 45
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -168,9 +169,23 @@ void MovePID(void* arg) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 //		kf.update();
 //		boatState = kf.get_state();
-		if(stateCounter < 10) {
-			boatState = testStates[stateCounter++];
+		if(stateCounter < TESTDELAY) {
+			stateCounter++;
+			cont.setMotorSpeed(0, 0);
+		}
+		// Drive out a bit to the pond before doing its ting
+		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
+			stateCounter++;
+			cont.setMotorDirection(true, true);
+			cont.setMotorSpeed(500, 530);
+		}
+		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
+			boatState = testStates[stateCounter - TESTDELAY - 10];
+			stateCounter++;
 			cont.updatePidPosition(boatState.x, boatState.y, boatState.b);
+		}
+		else {
+			cont.setMotorSpeed(0, 0);
 		}
 	}
 }
@@ -181,13 +196,25 @@ void MoveLinear(void* arg) {
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
 //	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
+//	vTaskDelay(pdMS_TO_TICKS(10000));
 	cont.setTarget(5, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 //		kf.update();
 //		boatState = kf.get_state();
-		if(stateCounter < 10) {
-			boatState = testStates[stateCounter++];
+		if(stateCounter < TESTDELAY) {
+			stateCounter++;
+			cont.setMotorSpeed(0, 0);
+		}
+		// Drive out a bit to the pond before doing its ting
+		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
+			stateCounter++;
+			cont.setMotorDirection(true, true);
+			cont.setMotorSpeed(500, 530);
+		}
+		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
+			boatState = testStates[stateCounter - TESTDELAY - 10];
+			stateCounter++;
 			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
 		}
 		else {
@@ -368,7 +395,17 @@ int main(void)
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
 
-  // ------------- Artificial boat states for moving straight--------------------
+//  for(int i = 0; i < 30; ++i) {
+//  	  state_var temp = { 	.x = 5,
+//  	    					.y = 0,
+//  	    					.b = 0,
+//  							.vX = 0,
+//  							.vY = 0,
+//  							.vB = 0};
+//  	  testStates.push_back(temp);
+//    }
+/*
+  // ------------- Artificial boat states for moving straight east --------------------
   for(int i = 0; i < 10; ++i) {
 	  state_var temp = { 	.x = 0.5*(double)i,
 	    					.y = 0,
@@ -378,9 +415,9 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-
+*/
 /*
-  // ------------- Artificial boat states for moving in slight right curve --------------------
+  // ------------- Artificial boat states for moving in slight right curve towards south --------------------
   for(int i = 0; i < 10; ++i) {
   	  state_var temp = { 	.x = 0.5*(double)i,
   	    					.y = 1-0.1*(double)i,
@@ -392,7 +429,7 @@ int main(void)
    }
    */
 /*
-  // ------------- Artificial boat states for moving in slight left curve --------------------
+  // ------------- Artificial boat states for moving in slight left curve towards north --------------------
   for(int i = 0; i < 10; ++i) {
 	  state_var temp = { 	.x = 0.5*(double)i,
     	    				.y = -1 + 0.1*(double)i,
@@ -403,8 +440,8 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-/*
-  // ------------- Artificial boat states for left point turn --------------------
+
+  // ------------- Artificial boat states for left point turn towards north --------------------
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 5,
   							.y = -2,
@@ -423,9 +460,9 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  */
+
 /*
-  // ------------- Artificial boat states for right point turn --------------------
+  // ------------- Artificial boat states for right point turn towards south --------------------
   for(int i = 0; i < 3; ++i) {
 	  state_var temp = { 	.x = 5,
 							.y = -2,
@@ -444,10 +481,31 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
+/*
+  // ------------- Artificial boat states for right point turn towards east --------------------
+  for(int i = 0; i < 3; ++i) {
+	  state_var temp = { 	.x = 0,
+							.y = 0,
+							.b = (double)i*31,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = i*0.7,
+							.y = 0,
+							.b = 90,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+
   */
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
-//  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
-  xTaskCreate(MoveLinear, "chad", 1024, NULL, 1, NULL);
+  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
+//  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
