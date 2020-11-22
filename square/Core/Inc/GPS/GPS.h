@@ -10,14 +10,11 @@
 
 #include "usart.h"
 #include "GPS/lwgps.h"
-<<<<<<< HEAD
 #include "cmath"
-=======
 #include "FreeRTOS.h"
 #include "semphr.h"
 
 extern SemaphoreHandle_t gps_sem;
->>>>>>> a08d9a982bf5c69c4a3c5684992236e87920f0e8
 
 #define GPS_MSG_SIZE 144
 #define GPS_INACCURACY 1.5
