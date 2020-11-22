@@ -166,11 +166,11 @@ void SF_Nav::update()
 		// Step 7: Corrected covariance
 		P_n = (I-K_n*H)*P_pred;
 
-		if(posCtr < LOGLENGTH) {
-			xPosLog[posCtr] = x_n(0);
-			yPosLog[posCtr] = x_n(1);
-			posCtr++;
-		}
+//		if(posCtr < LOGLENGTH) {
+//			xPosLog[posCtr] = x_n(0);
+//			yPosLog[posCtr] = x_n(1);
+//			posCtr++;
+//		}
 	}
 }
 

@@ -4,7 +4,7 @@
 #include "stdint.h"
 
 #define MAX_DUTY_CYCLE 750
-#define MIN_DUTY_CYCLE 600
+#define MIN_DUTY_CYCLE 500
 #define ROT_DUTY_CYCLE 30
 
 #define FAR_DIST 12

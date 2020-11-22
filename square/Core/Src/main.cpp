@@ -190,9 +190,12 @@ void MoveLinear(void* arg) {
 			boatState = testStates[stateCounter++];
 			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
 		}
+		else {
+			cont.setMotorSpeed(0, 0);
+		}
 	}
 }
-
+/*
 // Moves to a target using basic error correction function
 void MoveToPoint(void* arg) {
 	gps_sem = xSemaphoreCreateBinary();
@@ -238,7 +241,7 @@ void MoveToPoint(void* arg) {
 		//setSpeed(pwml + bearingAdjustment, pwmr);
 	}
 }
-
+*/
 // Calls updates on the Kalman Filter and initializes the GPS and IMU
 void UpdateKF(void* arg) {
 	gps_sem = xSemaphoreCreateBinary();
@@ -277,8 +280,8 @@ void checkBattery(void*)
 
 	while(1)
 	{
-		float dummyV = bat_curr.getRawVoltage();
-		float dummyC = bat_curr.getCurrent();
+//		float dummyV = bat_curr.getRawVoltage();
+//		float dummyC = bat_curr.getCurrent();
 		//If current is ever greater than the limit than switch relay off
 		if(!bat_curr.checkCurrent())
 		{
@@ -299,7 +302,7 @@ void TestMotors(void* arg) {
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
 	cont.setMotorDirection(true, true);	// Go forward
-//	cont.setMotorSpeed(500, 520);
+	cont.setMotorSpeed(500, 500);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -365,7 +368,7 @@ int main(void)
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
 
-  // Setup artificial boat states
+  // ------------- Artificial boat states for moving straight--------------------
   for(int i = 0; i < 10; ++i) {
 	  state_var temp = { 	.x = 0.5*(double)i,
 	    					.y = 0,
@@ -375,9 +378,76 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
+
+/*
+  // ------------- Artificial boat states for moving in slight right curve --------------------
+  for(int i = 0; i < 10; ++i) {
+  	  state_var temp = { 	.x = 0.5*(double)i,
+  	    					.y = 1-0.1*(double)i,
+  	    					.b = 90+i,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+   }
+   */
+/*
+  // ------------- Artificial boat states for moving in slight left curve --------------------
+  for(int i = 0; i < 10; ++i) {
+	  state_var temp = { 	.x = 0.5*(double)i,
+    	    				.y = -1 + 0.1*(double)i,
+    	    				.b = 90-i,
+    						.vX = 0,
+    						.vY = 0,
+    						.vB = 0};
+	  testStates.push_back(temp);
+   }
+   */
+/*
+  // ------------- Artificial boat states for left point turn --------------------
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 5,
+  							.y = -2,
+  							.b = 90-(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 5,
+							.y = -2-i*0.3,
+							.b = 0,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  */
+/*
+  // ------------- Artificial boat states for right point turn --------------------
+  for(int i = 0; i < 3; ++i) {
+	  state_var temp = { 	.x = 5,
+							.y = -2,
+							.b = 90+(double)i*31,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 5,
+							.y = 2-i*0.3,
+							.b = 180,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  */
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
-//  xTaskCreate(MoveLinear, "chad", 1024, NULL, 1, NULL);
+  xTaskCreate(MoveLinear, "chad", 1024, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
