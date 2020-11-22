@@ -30,59 +30,34 @@ void GPS::init(UART_HandleTypeDef* handle)
 
 bool GPS::update()
 {
-//	if(has_data)
-//	{
-//		//Store buffer here
-//		char temp[GPS_MSG_SIZE];
-//		strcpy(temp, data);
-//		has_data = false;
-//		lwgps_process(&lwgps_handle, temp, sizeof(temp));
-//
-//		if(lwgps_handle.is_valid)
-//		{
-//			curr_position.latitude = lwgps_handle.latitude;
-//			curr_position.longitude = lwgps_handle.longitude;
-//
-//			curr_velocity.speed = lwgps_handle.speed;
-//			curr_velocity.bearing = lwgps_handle.course;
-//
-//			//HAL_UART_Receive_IT(huart, (uint8_t*)data, GPS_MSG_SIZE);
-//
-//			return true;
-//		}
-//		else
-//		{
-//			//HAL_UART_Receive_IT(huart, (uint8_t*)data, GPS_MSG_SIZE);
-//
-//			return false;
-//		}
-//
-//
-//	}
-	xSemaphoreTake(gps_sem, portMAX_DELAY);
-	char temp[GPS_MSG_SIZE];
-	strcpy(temp, data);
-	has_data = false;
-
-	lwgps_process(&lwgps_handle, temp, sizeof(temp));
-
-	if(lwgps_handle.is_valid)
+	if(has_data)
 	{
-		curr_position.latitude = lwgps_handle.latitude;
-		curr_position.longitude = lwgps_handle.longitude;
+		//Store buffer here
+		char temp[GPS_MSG_SIZE];
+		strcpy(temp, data);
+		has_data = false;
+		lwgps_process(&lwgps_handle, temp, sizeof(temp));
 
-		curr_velocity.speed = lwgps_handle.speed;
-		curr_velocity.bearing = lwgps_handle.course;
+		if(lwgps_handle.is_valid)
+		{
+			curr_position.latitude = lwgps_handle.latitude;
+			curr_position.longitude = lwgps_handle.longitude;
 
-		//HAL_UART_Receive_IT(huart, (uint8_t*)data, GPS_MSG_SIZE);
+			curr_velocity.speed = lwgps_to_speed(lwgps_handle.speed, lwgps_speed_mps);
+			curr_velocity.bearing = lwgps_handle.course;
 
-		return true;
-	}
-	else
-	{
-		//HAL_UART_Receive_IT(huart, (uint8_t*)data, GPS_MSG_SIZE);
+			//HAL_UART_Receive_IT(huart, (uint8_t*)data, GPS_MSG_SIZE);
 
-		return false;
+			return true;
+		}
+		else
+		{
+			//HAL_UART_Receive_IT(huart, (uint8_t*)data, GPS_MSG_SIZE);
+
+			return false;
+		}
+
+
 	}
 	else
 	{
