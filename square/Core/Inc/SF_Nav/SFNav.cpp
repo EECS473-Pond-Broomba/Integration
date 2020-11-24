@@ -116,6 +116,7 @@ void SF_Nav::update()
 //	vTaskDelay(500);
 	//Get inputs u_n and z_n
 	if(gps.update()) {
+		validState = true;
 		prev_location = curr_location;
 		curr_location = gps.getPosition();
 		// If prev_location is not set yet, set it to curr_location so our dist wont be 2000 miles
@@ -186,4 +187,8 @@ state_var SF_Nav::get_state() {
 
 double SF_Nav::get_bearing() {
 	return imu.getOrientation(IMU::Axes::z);
+}
+
+bool SF_Nav::get_valid() {
+	return validState;
 }

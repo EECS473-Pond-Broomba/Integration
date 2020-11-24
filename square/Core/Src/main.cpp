@@ -163,12 +163,14 @@ void MovePID(void* arg) {
 	const TickType_t xPeriod = pdMS_TO_TICKS(PID_UPDATE_TIME);
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
-//	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
-	cont.setTarget(5, 0);
+	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
+	cont.setTarget(0, 5);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 //		kf.update();
 //		boatState = kf.get_state();
+//		cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+
 		if(stateCounter < TESTDELAY) {
 			stateCounter++;
 			cont.setMotorSpeed(0, 0);
@@ -187,6 +189,7 @@ void MovePID(void* arg) {
 		else {
 			cont.setMotorSpeed(0, 0);
 		}
+
 	}
 }
 
@@ -195,13 +198,17 @@ void MoveLinear(void* arg) {
 	const TickType_t xPeriod = pdMS_TO_TICKS(PID_UPDATE_TIME);
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
-//	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
+	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
 //	vTaskDelay(pdMS_TO_TICKS(10000));
-	cont.setTarget(5, 0);
+	cont.setTarget(0, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 //		kf.update();
 //		boatState = kf.get_state();
+//		if(kf.get_valid()) {
+//			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+//		}
+
 		if(stateCounter < TESTDELAY) {
 			stateCounter++;
 			cont.setMotorSpeed(0, 0);
@@ -210,7 +217,7 @@ void MoveLinear(void* arg) {
 		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
 			stateCounter++;
 			cont.setMotorDirection(true, true);
-			cont.setMotorSpeed(500, 530);
+			cont.setMotorSpeed(500, 560);
 		}
 		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
 			boatState = testStates[stateCounter - TESTDELAY - 10];
@@ -220,55 +227,10 @@ void MoveLinear(void* arg) {
 		else {
 			cont.setMotorSpeed(0, 0);
 		}
+
 	}
 }
-/*
-// Moves to a target using basic error correction function
-void MoveToPoint(void* arg) {
-	gps_sem = xSemaphoreCreateBinary();
-	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
-	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
-	xLastWakeTime = xTaskGetTickCount();
-	vTaskDelay(1000);
-	while(1) {
-		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-		kf.update();
-		boatState = kf.get_state();
 
-		// Calculate errors
-		double distanceError = distanceBetweenStates(boatState, targetStates[targetCounter]);
-//		double bearingError = bearingBetweenStates(boatState, targetStates[targetCounter]);
-		double bearingError = kf.get_bearing() - 270.0;
-
-		int pwml = 0;
-		int pwmr = 0;
-		// NOTE: Might have to negative bearingError
-		int bearingAdjustment = pow((0.15 * bearingError), 3);
-		// Clamp bearing adjustment to +/-20
-		bearingAdjustment = bearingAdjustment > 20 ? 20 :
-							bearingAdjustment < -20 ? -20 :
-							bearingAdjustment;
-		// Only spin motors if robot is further than this amount from target
-		if(distanceError > DISTDEADZONE && distanceError < DISTSATURATE) {
-			int temp = pow(0.9 * distanceError, 3) + MOTORMIN;	// If distanceError is just under 5, set DC to around 260
-			pwml = temp;
-			pwmr = temp;
-		}
-		else if(distanceError >= DISTSATURATE) {
-			pwml = MOTORMAX;
-			pwmr = MOTORMAX;
-		}
-		else if(distanceError <= DISTDEADZONE) {
-			pwml = MOTORMIN;
-			pwmr = MOTORMIN;
-		}
-
-		// NOTE: Might have to add bearingAdjustment to pwmr instead of pwml
-		//setSpeed(pwml + bearingAdjustment, pwmr);
-	}
-}
-*/
 // Calls updates on the Kalman Filter and initializes the GPS and IMU
 void UpdateKF(void* arg) {
 	gps_sem = xSemaphoreCreateBinary();
@@ -329,7 +291,7 @@ void TestMotors(void* arg) {
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
 	cont.setMotorDirection(true, true);	// Go forward
-	cont.setMotorSpeed(500, 500);
+	cont.setMotorSpeed(400, 400);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -394,9 +356,9 @@ int main(void)
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 0);
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
-
+/*
   // -------------------- Artificial states for moving straight -----------------
-  // Straight South
+  // Straight South - Correct
   for(int i = 0; i < 10; ++i) {
   	  state_var temp = { 	.x = 0,
   	    					.y = 5-0.5*(double)i,
@@ -406,8 +368,9 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  /*
-  // Straight West
+  */
+/*
+  // Straight West -- Did a right point turn instead
   for(int i = 0; i < 10; ++i) {
   	  state_var temp = { 	.x = 5-0.5*(double)i,
   	    					.y = 0,
@@ -417,7 +380,9 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  // Straight North
+  */
+/*
+  // Straight North -- Curved right instead
   for(int i = 0; i < 10; ++i) {
   	  state_var temp = { 	.x = 0,
   	    					.y = -5+0.5*(double)i,
@@ -427,7 +392,9 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  // Straight East
+  */
+/*
+  // Straight East - Correct
   for(int i = 0; i < 10; ++i) {
   	  state_var temp = { 	.x = -5+0.5*(double)i,
   	    					.y = 0,
@@ -437,8 +404,11 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
+  */
+
   // -------------------- Artificial states for left point turn and then straight -----------------
-  // Target to the North
+/*
+  // Target to the North -- Crrect util end where it did a short right point turn
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 0,
   							.y = -5,
@@ -457,7 +427,9 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  // Target to the East
+  */
+/*
+  // Target to the East -- Correct
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = -5,
   							.y = 0,
@@ -476,7 +448,9 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  // Target to the South
+  */
+/*
+  // Target to the South -- Small left point turn at the end
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 0,
   							.y = 5,
@@ -495,7 +469,9 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  // Target to the West
+  */
+
+  // Target to the West - Left point turn the entire 10 seconds
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 5,
   							.y = 0,
@@ -514,7 +490,7 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-
+/*
   // -------------------- Artificial states for right point turn and then straight -----------------
   // Target to the North
   for(int i = 0; i < 3; ++i) {
@@ -620,8 +596,8 @@ int main(void)
    }
    */
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
-  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
-//  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
+//  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
+  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
   //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
   //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
@@ -852,33 +828,34 @@ void MX_USART2_UART_Init(void)
   * @param None
   * @retval None
   */
-void MX_USART6_UART_Init(void)
-{
 
-  /* USER CODE BEGIN USART6_Init 0 */
-
-  /* USER CODE END USART6_Init 0 */
-
-  /* USER CODE BEGIN USART6_Init 1 */
-
-  /* USER CODE END USART6_Init 1 */
-  huart6.Instance = USART6;
-  huart6.Init.BaudRate = 115200;
-  huart6.Init.WordLength = UART_WORDLENGTH_8B;
-  huart6.Init.StopBits = UART_STOPBITS_1;
-  huart6.Init.Parity = UART_PARITY_NONE;
-  huart6.Init.Mode = UART_MODE_TX_RX;
-  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart6) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART6_Init 2 */
-
-  /* USER CODE END USART6_Init 2 */
-
-}
+//void MX_USART6_UART_Init(void)
+//{
+//
+//  /* USER CODE BEGIN USART6_Init 0 */
+//
+//  /* USER CODE END USART6_Init 0 */
+//
+//  /* USER CODE BEGIN USART6_Init 1 */
+//
+//  /* USER CODE END USART6_Init 1 */
+//  huart6.Instance = USART6;
+//  huart6.Init.BaudRate = 115200;
+//  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+//  huart6.Init.StopBits = UART_STOPBITS_1;
+//  huart6.Init.Parity = UART_PARITY_NONE;
+//  huart6.Init.Mode = UART_MODE_TX_RX;
+//  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+//  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+//  if (HAL_UART_Init(&huart6) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /* USER CODE BEGIN USART6_Init 2 */
+//
+//  /* USER CODE END USART6_Init 2 */
+//
+//}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

@@ -34,6 +34,7 @@ public:
 	state_var get_state();
 	GPS gps;
 	double get_bearing();
+	bool get_valid();
 
 private:
 	IMU imu;
@@ -52,6 +53,7 @@ private:
 	double xPosLog[LOGLENGTH];
 	double yPosLog[LOGLENGTH];
 	int posCtr = 0;
+	bool validState = false;
 
 	inline double sind(double x)
 	{
