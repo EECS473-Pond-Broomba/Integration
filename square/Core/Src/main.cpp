@@ -395,27 +395,206 @@ int main(void)
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
 
-//  for(int i = 0; i < 30; ++i) {
-//  	  state_var temp = { 	.x = 5,
-//  	    					.y = 0,
-//  	    					.b = 0,
-//  							.vX = 0,
-//  							.vY = 0,
-//  							.vB = 0};
-//  	  testStates.push_back(temp);
-//    }
-/*
-  // ------------- Artificial boat states for moving straight east --------------------
+  // -------------------- Artificial states for moving straight -----------------
+  // Straight South
   for(int i = 0; i < 10; ++i) {
-	  state_var temp = { 	.x = 0.5*(double)i,
-	    					.y = 0,
-	    					.b = 90,
+  	  state_var temp = { 	.x = 0,
+  	    					.y = 5-0.5*(double)i,
+  	    					.b = 180,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  /*
+  // Straight West
+  for(int i = 0; i < 10; ++i) {
+  	  state_var temp = { 	.x = 5-0.5*(double)i,
+  	    					.y = 0,
+  	    					.b = 270,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  // Straight North
+  for(int i = 0; i < 10; ++i) {
+  	  state_var temp = { 	.x = 0,
+  	    					.y = -5+0.5*(double)i,
+  	    					.b = 0,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  // Straight East
+  for(int i = 0; i < 10; ++i) {
+  	  state_var temp = { 	.x = -5+0.5*(double)i,
+  	    					.y = 0,
+  	    					.b = 90,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  // -------------------- Artificial states for left point turn and then straight -----------------
+  // Target to the North
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 0,
+  							.y = -5,
+  							.b = 90-(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 0,
+							.y = -5+(double)i*0.7,
+							.b = 0,
 							.vX = 0,
 							.vY = 0,
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-*/
+  // Target to the East
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = -5,
+  							.y = 0,
+  							.b = 180-(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = -5+(double)i*0.7,
+							.y = 0,
+							.b = 90,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  // Target to the South
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 0,
+  							.y = 5,
+  							.b = 270-(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 0,
+							.y = 5-(double)i*0.7,
+							.b = 180,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  // Target to the West
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 5,
+  							.y = 0,
+  							.b = 359-(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 5-(double)i*0.7,
+							.y = 0,
+							.b = 270,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+
+  // -------------------- Artificial states for right point turn and then straight -----------------
+  // Target to the North
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 0,
+  							.y = -5,
+  							.b = (270+(double)i*31)%360,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 0,
+							.y = -5+(double)i*0.7,
+							.b = 0,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  // Target to the East
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = -5,
+  							.y = 0,
+  							.b = 0+(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = -5+(double)i*0.7,
+							.y = 0,
+							.b = 90,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  // Target to the South
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 0,
+  							.y = 5,
+  							.b = 90+(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 0,
+							.y = 5-(double)i*0.7,
+							.b = 180,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  // Target to the West
+  for(int i = 0; i < 3; ++i) {
+  	  state_var temp = { 	.x = 5,
+  							.y = 0,
+  							.b = 180+(double)i*31,
+  							.vX = 0,
+  							.vY = 0,
+  							.vB = 0};
+  	  testStates.push_back(temp);
+  }
+  for(int i = 0; i < 7; ++i) {
+	  state_var temp = { 	.x = 5-(double)i*0.7,
+							.y = 0,
+							.b = 270,
+							.vX = 0,
+							.vY = 0,
+							.vB = 0};
+	  testStates.push_back(temp);
+  }
+  */
+
+
 /*
   // ------------- Artificial boat states for moving in slight right curve towards south --------------------
   for(int i = 0; i < 10; ++i) {
@@ -440,69 +619,6 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-
-  // ------------- Artificial boat states for left point turn towards north --------------------
-  for(int i = 0; i < 3; ++i) {
-  	  state_var temp = { 	.x = 5,
-  							.y = -2,
-  							.b = 90-(double)i*31,
-  							.vX = 0,
-  							.vY = 0,
-  							.vB = 0};
-  	  testStates.push_back(temp);
-  }
-  for(int i = 0; i < 7; ++i) {
-	  state_var temp = { 	.x = 5,
-							.y = -2-i*0.3,
-							.b = 0,
-							.vX = 0,
-							.vY = 0,
-							.vB = 0};
-	  testStates.push_back(temp);
-  }
-
-/*
-  // ------------- Artificial boat states for right point turn towards south --------------------
-  for(int i = 0; i < 3; ++i) {
-	  state_var temp = { 	.x = 5,
-							.y = -2,
-							.b = 90+(double)i*31,
-							.vX = 0,
-							.vY = 0,
-							.vB = 0};
-	  testStates.push_back(temp);
-  }
-  for(int i = 0; i < 7; ++i) {
-	  state_var temp = { 	.x = 5,
-							.y = 2-i*0.3,
-							.b = 180,
-							.vX = 0,
-							.vY = 0,
-							.vB = 0};
-	  testStates.push_back(temp);
-  }
-/*
-  // ------------- Artificial boat states for right point turn towards east --------------------
-  for(int i = 0; i < 3; ++i) {
-	  state_var temp = { 	.x = 0,
-							.y = 0,
-							.b = (double)i*31,
-							.vX = 0,
-							.vY = 0,
-							.vB = 0};
-	  testStates.push_back(temp);
-  }
-  for(int i = 0; i < 7; ++i) {
-	  state_var temp = { 	.x = i*0.7,
-							.y = 0,
-							.b = 90,
-							.vX = 0,
-							.vY = 0,
-							.vB = 0};
-	  testStates.push_back(temp);
-  }
-
-  */
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
   xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
