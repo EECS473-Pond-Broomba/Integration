@@ -23,7 +23,17 @@ void controller::setTarget(int16_t x, int16_t y)
 
 void controller::updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t bear)
 {
-    int16_t bearingError = calculate_bearing(x_curr, y_curr) - bear;
+	int16_t tempBearing = calculate_bearing(x_curr, y_curr) % 360;
+	while(tempBearing < 0) {
+		tempBearing += 360;
+	}
+    int16_t bearingError = tempBearing - bear;
+    while(bearingError < -180) {
+    	bearingError += 360;
+    }
+    while(bearingError > 180) {
+    	bearingError -= 360;
+    }
     if(bearingError > WIDE_ANG) {
         setDirection(true, false);
         setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
@@ -75,13 +85,23 @@ void controller::updatePidPosition(int16_t x_curr, int16_t y_curr, uint16_t bear
 {
 	setSpeed(0, 0);
 	//If the bearing error is very large then we do a fixed turn
-	int16_t bearingError = calculate_bearing(x_curr, y_curr) - bear;
+	int16_t tempBearing = calculate_bearing(x_curr, y_curr) % 360;
+	while(tempBearing < 0) {
+		tempBearing += 360;
+	}
+	int16_t bearingError = tempBearing - bear;
+	while(bearingError < -180) {
+		bearingError += 360;
+	}
+	while(bearingError > 180) {
+		bearingError -= 360;
+	}
 	if(bearingError > WIDE_ANG) {
-		setDirection(false, true);
+		setDirection(true, false);
 		setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
 	}
 	else if(bearingError < -WIDE_ANG) {
-		setDirection(true, false);
+		setDirection(false, true);
 		setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
 	}
 	//Use PID to go to target
@@ -154,9 +174,10 @@ int16_t controller::calculate_dist(int16_t x, int16_t y)
     return sqrt(pow(x - targetX, 2) + pow(y - targetY, 2));
 }
 
-uint16_t controller::calculate_bearing(int16_t x, int16_t y)
+int16_t controller::calculate_bearing(int16_t x, int16_t y)
 {
-     return 90 - atan2(targetY - y, targetX - x) * (180.0/3.141592653589793238463);
+	double tempAtan = atan2(targetY - y, targetX - x);
+    return 90 - tempAtan * (180.0/3.141592653589793238463);
 }
 
 void controller::setMotorSpeed(int pwm1, int pwm2) {

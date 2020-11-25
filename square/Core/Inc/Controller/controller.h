@@ -57,7 +57,7 @@ private:
     int pid_p_bear, pid_i_bear, pid_d_bear;
 
     int16_t calculate_dist(int16_t x, int16_t y);
-    uint16_t calculate_bearing(int16_t x, int16_t y);
+    int16_t calculate_bearing(int16_t x, int16_t y);
 
 };
 

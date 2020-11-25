@@ -76,7 +76,7 @@ uint32_t value[2];
 #define MOTORMAX 250 - MOTORMAXDIFF
 #define DISTDEADZONE 0.3	// If robot is within this distance of target, motors dont move
 #define DISTSATURATE 5		// If robot is further than this distance of target, motors move at maximum speed
-#define TESTDELAY 45
+#define TESTDELAY 0
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -169,7 +169,10 @@ void MovePID(void* arg) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 //		kf.update();
 //		boatState = kf.get_state();
-//		cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+//		// Only start controllers and motors when GPS data is valid
+//		if(kf.get_valid()) {
+//			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+//		}
 
 		if(stateCounter < TESTDELAY) {
 			stateCounter++;
@@ -205,6 +208,7 @@ void MoveLinear(void* arg) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 //		kf.update();
 //		boatState = kf.get_state();
+		// Only start controllers and motors when GPS data is valid
 //		if(kf.get_valid()) {
 //			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
 //		}
@@ -356,8 +360,9 @@ int main(void)
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 0);
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
-/*
+
   // -------------------- Artificial states for moving straight -----------------
+  /*
   // Straight South - Correct
   for(int i = 0; i < 10; ++i) {
   	  state_var temp = { 	.x = 0,
@@ -368,7 +373,7 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  */
+*/
 /*
   // Straight West -- Did a right point turn instead
   for(int i = 0; i < 10; ++i) {
@@ -380,7 +385,7 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  */
+*/
 /*
   // Straight North -- Curved right instead
   for(int i = 0; i < 10; ++i) {
@@ -392,7 +397,7 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  */
+*/
 /*
   // Straight East - Correct
   for(int i = 0; i < 10; ++i) {
@@ -404,7 +409,7 @@ int main(void)
   							.vB = 0};
   	  testStates.push_back(temp);
   }
-  */
+*/
 
   // -------------------- Artificial states for left point turn and then straight -----------------
 /*
@@ -427,7 +432,7 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  */
+*/
 /*
   // Target to the East -- Correct
   for(int i = 0; i < 3; ++i) {
@@ -448,7 +453,7 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  */
+*/
 /*
   // Target to the South -- Small left point turn at the end
   for(int i = 0; i < 3; ++i) {
@@ -469,7 +474,7 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  */
+*/
 
   // Target to the West - Left point turn the entire 10 seconds
   for(int i = 0; i < 3; ++i) {
@@ -490,13 +495,15 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-/*
+
+
   // -------------------- Artificial states for right point turn and then straight -----------------
+  /*
   // Target to the North
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 0,
   							.y = -5,
-  							.b = (270+(double)i*31)%360,
+  							.b = 270+(double)i*29,
   							.vX = 0,
   							.vY = 0,
   							.vB = 0};
@@ -511,6 +518,8 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
+  */
+/*
   // Target to the East
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = -5,
@@ -530,6 +539,8 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
+*/
+/*
   // Target to the South
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 0,
@@ -549,6 +560,8 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
+*/
+/*
   // Target to the West
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 5,
@@ -568,7 +581,7 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-  */
+*/
 
 
 /*
