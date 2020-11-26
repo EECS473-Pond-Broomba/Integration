@@ -9,7 +9,7 @@
 #include <cmath>
 #define WNOISE 0.1
 #define VNOISE 0.1
-
+#define NUMCAL 30
 
 
 SF_Nav::SF_Nav() {
@@ -31,6 +31,25 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 
 
 //	h << Eigen::Matrix4f::Identity();
+	double gpsErrorSum, imuAngVelErrorSum = 0.0;
+	double dist, gpsBearing;
+	// Calibrate Q matrix
+	prev_location.latitude = 0.0;
+	prev_location.longitude = 0.0;
+	for(int i = 0; i < NUMCAL; i += 0) {
+		if(gps.update()) {
+			prev_location = curr_location;
+			curr_location = gps.getPosition();
+			// If prev_location is not set yet, set it to curr_location so our dist wont be 2000 miles
+			if(prev_location.latitude < 0.1 && prev_location.latitude > -0.1) {
+				prev_location = curr_location;
+			}
+			lwgps_distance_bearing(prev_location.latitude, prev_location.longitude, curr_location.latitude, curr_location.longitude, &dist, &gpsBearing);
+			gpsErrorSum += pow(dist, 2);
+			imuAngVelErrorSum += pow(imu.getAngVel(IMU::Axes::z), 2);
+			i++;
+		}
+	}
 
 
 	// EKF
@@ -52,19 +71,19 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	P_n = I;
 	P_pred = I;
 	//TODO: Get an estimate for w, Q and v, R
-	w << WNOISE,
-		WNOISE,
+	w << gpsErrorSum / (NUMCAL-1),
+			gpsErrorSum / (NUMCAL-1),
 		WNOISE,
 		WNOISE*10.0,
 		WNOISE,
-		WNOISE;
+		imuAngVelErrorSum / (NUMCAL-1);
 	// Jacobian of w w.r.t states
-	W << WNOISE, 0, 0, 0, 0, 0,
-		 0, WNOISE, 0, 0, 0, 0,
+	W << gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0, 0,
+		 0, gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0,
 		 0, 0, WNOISE, 0, 0, 0,
 		 0, 0, 0, WNOISE*10.0, 0, 0,
 		 0, 0, 0, 0, WNOISE, 0,
-		 0, 0, 0, 0, 0, WNOISE;
+		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
 //	Q << Eigen::Matrix6f::Identity();
 	Q = I;
 	v << VNOISE,
