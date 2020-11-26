@@ -31,7 +31,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 
 
 //	h << Eigen::Matrix4f::Identity();
-	double gpsErrorSum, imuAngVelErrorSum = 0.0;
+	double gpsErrorSum, gpsVelErrorSum, imuAngVelErrorSum = 0.0;
 	double dist, gpsBearing;
 	// Calibrate Q matrix
 	prev_location.latitude = 0.0;
@@ -44,8 +44,10 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 			if(prev_location.latitude < 0.1 && prev_location.latitude > -0.1) {
 				prev_location = curr_location;
 			}
+			curr_vel = gps.getVelocity();
 			lwgps_distance_bearing(prev_location.latitude, prev_location.longitude, curr_location.latitude, curr_location.longitude, &dist, &gpsBearing);
 			gpsErrorSum += pow(dist, 2);
+			gpsVelErrorSum += pow(gps.getVelocity().speed, 2);
 			imuAngVelErrorSum += pow(imu.getAngVel(IMU::Axes::z), 2);
 			i++;
 		}
@@ -74,15 +76,15 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	w << gpsErrorSum / (NUMCAL-1),
 			gpsErrorSum / (NUMCAL-1),
 		WNOISE,
-		WNOISE*10.0,
-		WNOISE,
+		gpsVelErrorSum / (NUMCAL-1),
+		gpsVelErrorSum / (NUMCAL-1),
 		imuAngVelErrorSum / (NUMCAL-1);
 	// Jacobian of w w.r.t states
 	W << gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0, 0,
 		 0, gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0,
 		 0, 0, WNOISE, 0, 0, 0,
-		 0, 0, 0, WNOISE*10.0, 0, 0,
-		 0, 0, 0, 0, WNOISE, 0,
+		 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0, 0,
+		 0, 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0,
 		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
 //	Q << Eigen::Matrix6f::Identity();
 	Q = I;
