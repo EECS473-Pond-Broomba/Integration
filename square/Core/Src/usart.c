@@ -24,7 +24,7 @@
 
 /* USER CODE END 0 */
 
-extern UART_HandleTypeDef huart6;
+UART_HandleTypeDef huart6;
 
 /* USART6 init function */
 

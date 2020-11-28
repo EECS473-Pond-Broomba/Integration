@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "Controller/controller.h"
 #include "main.h"
+#include "spi.h"
 #include "cmsis_os.h"
 #include "i2c.h"
 #include "usart.h"
@@ -27,6 +28,7 @@
 #include "GPS/GPS.h"
 #include "IMU/IMU.h"
 #include "SF_Nav/SFNav.h"
+#include "LoRa.h"
 //#include "uart_printf.h"
 #include "semphr.h"
 #include "FreeRTOS.h"
@@ -67,15 +69,16 @@ long Difference = 0;
 uint8_t Is_First_Captured = 0;
 uint8_t buf[20];
 uint32_t value[2];
-
+loraClass radio;
+byte getstr[21];
 
 
 //#define PIDPERIOD 500
 #define MOTORMAXDIFF 20
 #define MOTORMIN 150 + MOTORMAXDIFF
 #define MOTORMAX 250 - MOTORMAXDIFF
-#define DISTDEADZONE 0.3	// If robot is within this distance of target, motors dont move
-#define DISTSATURATE 5		// If robot is further than this distance of target, motors move at maximum speed
+//#define DISTDEADZONE 0.3	// If robot is within this distance of target, motors dont move
+//#define DISTSATURATE 5		// If robot is further than this distance of target, motors move at maximum speed
 #define TESTDELAY 0
 
 /* Private function prototypes -----------------------------------------------*/
@@ -301,14 +304,31 @@ void TestMotors(void* arg) {
 	}
 }
 
-void TurnBoat(void* arg) {
+// Task that sends heartbeat
+void Heartbeat(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(10000);
 	xLastWakeTime = xTaskGetTickCount();
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	radio.Modulation = LORA;
+	radio.COB            = RFM95;
+	radio.Frequency      = 434000;
+	radio.OutputPower    = 17;             //17dBm OutputPower
+	radio.PreambleLength = 16;             //16Byte preamble
+	radio.FixedPktLength = false;          //explicit header mode for LoRa
+	radio.PayloadLength  = 21;
+	radio.CrcDisable     = true;
+
+	radio.SFSel          = SF9;
+	radio.BWSel          = BW125K;
+	radio.CRSel          = CR4_5;
+
+	radio.vInitialize();
+	radio.vGoStandby();
+	byte heartbeat[7] = {'b','r', 'o', 'o', 'm', 'b', 'a'};
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-		//changeDirection(15);
-		vTaskDelay(500);
+		radio.bSendMessage(heartbeat, 7);
 	}
 }
 
@@ -347,6 +367,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
+  MX_SPI3_Init();
 //  MX_TIM5_Init();
 //  MX_TIM9_Init();
 //  MX_USART2_UART_Init();
@@ -475,7 +496,7 @@ int main(void)
 	  testStates.push_back(temp);
   }
 */
-
+/*
   // Target to the West - Left point turn the entire 10 seconds
   for(int i = 0; i < 3; ++i) {
   	  state_var temp = { 	.x = 5,
@@ -495,7 +516,7 @@ int main(void)
 							.vB = 0};
 	  testStates.push_back(temp);
   }
-
+*/
 
   // -------------------- Artificial states for right point turn and then straight -----------------
   /*
@@ -610,11 +631,10 @@ int main(void)
    */
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
-  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-  //xTaskCreate(MoveToPoint, "move", 128, NULL, 1, NULL);
+//  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
-  //xTaskCreate(TurnBoat, "turn", 128, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
+  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
