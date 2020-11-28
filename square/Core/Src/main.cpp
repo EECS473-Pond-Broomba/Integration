@@ -71,7 +71,7 @@ uint8_t buf[20];
 uint32_t value[2];
 loraClass radio;
 byte getstr[21];
-
+byte heartbeat[7] = {'b','r', 'o', 'o', 'm', 'b', 'a'};
 
 //#define PIDPERIOD 500
 #define MOTORMAXDIFF 20
@@ -170,31 +170,31 @@ void MovePID(void* arg) {
 	cont.setTarget(0, 5);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-//		kf.update();
-//		boatState = kf.get_state();
-//		// Only start controllers and motors when GPS data is valid
-//		if(kf.get_valid()) {
-//			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
-//		}
+		kf.update();
+		boatState = kf.get_state();
+		// Only start controllers and motors when GPS data is valid
+		if(kf.get_valid()) {
+			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+		}
 
-		if(stateCounter < TESTDELAY) {
-			stateCounter++;
-			cont.setMotorSpeed(0, 0);
-		}
-		// Drive out a bit to the pond before doing its ting
-		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
-			stateCounter++;
-			cont.setMotorDirection(true, true);
-			cont.setMotorSpeed(500, 530);
-		}
-		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
-			boatState = testStates[stateCounter - TESTDELAY - 10];
-			stateCounter++;
-			cont.updatePidPosition(boatState.x, boatState.y, boatState.b);
-		}
-		else {
-			cont.setMotorSpeed(0, 0);
-		}
+//		if(stateCounter < TESTDELAY) {
+//			stateCounter++;
+//			cont.setMotorSpeed(0, 0);
+//		}
+//		// Drive out a bit to the pond before doing its ting
+//		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
+//			stateCounter++;
+//			cont.setMotorDirection(true, true);
+//			cont.setMotorSpeed(500, 530);
+//		}
+//		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
+//			boatState = testStates[stateCounter - TESTDELAY - 10];
+//			stateCounter++;
+//			cont.updatePidPosition(boatState.x, boatState.y, boatState.b);
+//		}
+//		else {
+//			cont.setMotorSpeed(0, 0);
+//		}
 
 	}
 }
@@ -209,31 +209,31 @@ void MoveLinear(void* arg) {
 	cont.setTarget(0, 0);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-//		kf.update();
-//		boatState = kf.get_state();
+		kf.update();
+		boatState = kf.get_state();
 		// Only start controllers and motors when GPS data is valid
-//		if(kf.get_valid()) {
-//			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
-//		}
-
-		if(stateCounter < TESTDELAY) {
-			stateCounter++;
-			cont.setMotorSpeed(0, 0);
-		}
-		// Drive out a bit to the pond before doing its ting
-		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
-			stateCounter++;
-			cont.setMotorDirection(true, true);
-			cont.setMotorSpeed(500, 560);
-		}
-		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
-			boatState = testStates[stateCounter - TESTDELAY - 10];
-			stateCounter++;
+		if(kf.get_valid()) {
 			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
 		}
-		else {
-			cont.setMotorSpeed(0, 0);
-		}
+
+//		if(stateCounter < TESTDELAY) {
+//			stateCounter++;
+//			cont.setMotorSpeed(0, 0);
+//		}
+//		// Drive out a bit to the pond before doing its ting
+//		else if(stateCounter >= TESTDELAY && stateCounter < (TESTDELAY+10)) {
+//			stateCounter++;
+//			cont.setMotorDirection(true, true);
+//			cont.setMotorSpeed(500, 560);
+//		}
+//		else if(stateCounter >= (TESTDELAY+10) && stateCounter < (TESTDELAY+20)) {
+//			boatState = testStates[stateCounter - TESTDELAY - 10];
+//			stateCounter++;
+//			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+//		}
+//		else {
+//			cont.setMotorSpeed(0, 0);
+//		}
 
 	}
 }
@@ -298,7 +298,7 @@ void TestMotors(void* arg) {
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
 	cont.setMotorDirection(true, true);	// Go forward
-	cont.setMotorSpeed(400, 400);
+	cont.setMotorSpeed(400, 500);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -325,10 +325,10 @@ void Heartbeat(void* arg) {
 
 	radio.vInitialize();
 	radio.vGoStandby();
-	byte heartbeat[7] = {'b','r', 'o', 'o', 'm', 'b', 'a'};
+
 	while(1) {
-		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 		radio.bSendMessage(heartbeat, 7);
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
 
@@ -629,12 +629,12 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
+//  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
