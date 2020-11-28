@@ -307,7 +307,7 @@ void TestMotors(void* arg) {
 // Task that sends heartbeat
 void Heartbeat(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(10000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	radio.Modulation = LORA;
@@ -317,7 +317,7 @@ void Heartbeat(void* arg) {
 	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
 	radio.PayloadLength  = 21;
-	radio.CrcDisable     = true;
+	radio.CrcDisable     = true;	// True for TX and False for RX
 
 	radio.SFSel          = SF9;
 	radio.BWSel          = BW125K;
