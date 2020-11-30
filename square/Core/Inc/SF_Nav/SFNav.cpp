@@ -34,6 +34,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	// Calibrate Q matrix
 	prev_location.latitude = 0.0;
 	prev_location.longitude = 0.0;
+	while(!calibrate) {};	// Wait for calibrate to go true
 	for(int i = 0; i < NUMCAL; i += 0) {
 		if(gps.update()) {
 			prev_location = curr_location;

@@ -1,0 +1,18 @@
+Latitude: xxx.xxxxxx
+Longitude: xxxx.xxxxxx
+Radius: xx.x
+
+To set a new geofence at (42.123456, -83.123456) of radius 4.5m
+g+42.123456-083.12345604.5
+
+To return home
+r
+
+To start up motors
+s
+
+To stop motors
+q
+
+To start calibration
+c

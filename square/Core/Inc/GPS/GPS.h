@@ -16,7 +16,7 @@
 
 extern SemaphoreHandle_t gps_sem;
 
-#define GPS_MSG_SIZE 144
+#define GPS_MSG_SIZE 150
 #define GPS_INACCURACY 1.5
 
 struct location{

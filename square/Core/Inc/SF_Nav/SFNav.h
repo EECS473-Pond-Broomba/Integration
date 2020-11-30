@@ -35,6 +35,9 @@ public:
 	GPS gps;
 	double get_bearing();
 	bool get_valid();
+	void setCalibration(bool startCalibrate) {
+		calibrate = startCalibrate;
+	}
 
 private:
 	IMU imu;
@@ -54,6 +57,7 @@ private:
 	double yPosLog[LOGLENGTH];
 	int posCtr = 0;
 	bool validState = false;
+	bool calibrate = false;
 
 	inline double sind(double x)
 	{
