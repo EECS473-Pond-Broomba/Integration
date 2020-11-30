@@ -77,10 +77,10 @@ void Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define RELAY_PIN GPIO_PIN_13
-#define RELAY_PORT GPIOB
 /* USER CODE BEGIN Private defines */
 #define KALMAN_REFRESH_TIME 0.1
+#define RELAY_PIN GPIO_PIN_13
+#define RELAY_PORT GPIOB
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

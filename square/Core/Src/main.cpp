@@ -319,7 +319,7 @@ void Heartbeat(void* arg) {
 	radio.PayloadLength  = 21;
 	radio.CrcDisable     = true;	// True for TX and False for RX
 
-	radio.SFSel          = SF9;
+	radio.SFSel          = SF12;
 	radio.BWSel          = BW125K;
 	radio.CRSel          = CR4_5;
 
@@ -331,6 +331,19 @@ void Heartbeat(void* arg) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
+
+void Blink(void* arg) {
+	TickType_t xLastWakeTime;
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	xLastWakeTime = xTaskGetTickCount();
+	while(1) {
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
 
 // ---------------------------- Our Tasks --------------------------------------
 
@@ -381,6 +394,10 @@ int main(void)
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 0);
 //  __HAL_TIM_SetCompare(&htim5, TIM_CHANNEL_3, 0);
   //motorInit(&htim2, &htim3);
+//  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
+//  HAL_Delay(2000);
+//  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
+//  HAL_Delay(2000);
 
   // -------------------- Artificial states for moving straight -----------------
   /*
@@ -629,12 +646,13 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
 //  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
+//  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
