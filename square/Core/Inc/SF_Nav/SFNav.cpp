@@ -29,8 +29,6 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	//Initialize all matrices and set refresh time
 	t = refresh_time;
 
-
-//	h << Eigen::Matrix4f::Identity();
 	double gpsErrorSum, gpsVelErrorSum, imuAngVelErrorSum = 0.0;
 	double dist, gpsBearing;
 	// Calibrate Q matrix
@@ -72,7 +70,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 		 0, 0, 0, 0, 0, 1;
 	P_n = I;
 	P_pred = I;
-	//TODO: Get an estimate for w, Q and v, R
+	// Get an estimate for w, Q and v, R
 	w << gpsErrorSum / (NUMCAL-1),
 			gpsErrorSum / (NUMCAL-1),
 		WNOISE,
@@ -86,8 +84,12 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 		 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0, 0,
 		 0, 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0,
 		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
-//	Q << Eigen::Matrix6f::Identity();
-	Q = I;
+	Q << 10, 0, 0, 0, 0, 0,
+		 0, 10, 0, 0, 0, 0,
+		 0, 0, 1, 0, 0, 0,
+		 0, 0, 0, 1, 0, 0,
+		 0, 0, 0, 0, 1, 0,
+		 0, 0, 0, 0, 0, 1;
 	v << VNOISE,
 		VNOISE,
 		VNOISE,
@@ -101,10 +103,12 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 		 0, 0, 0, VNOISE*10.0, 0, 0,
 		 0, 0, 0, 0, VNOISE*1.0, 0,
 		 0, 0, 0, 0, 0, VNOISE;
-//	R << Eigen::Matrix6f::Identity();
-//	h << Eigen::Matrix6f::Identity();
-//	H << Eigen::Matrix6f::Identity();
-	R = I;
+	R << 1, 0, 0, 0, 0, 0,
+		 0, 1, 0, 0, 0, 0,
+		 0, 0, 0.1, 0, 0, 0,
+		 0, 0, 0, 1, 0, 0,
+		 0, 0, 0, 0, 5, 0,
+		 0, 0, 0, 0, 0, 1;
 	h = I;
 	H = I;
 
@@ -121,20 +125,16 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 void SF_Nav::update()
 {
 	double dist, bearing, gpsBearing;
-//	imu.calculateLinearVelocity();
 	bearing = imu.getOrientation(IMU::Axes::z);
 	u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
 			imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
-//	u_n <<  imu.getLinearAcceleration(IMU::Axes::x),
-//			imu.getLinearAcceleration(IMU::Axes::y);
 	// Step 1: Predicted mean
 	muu << x_n, u_n;	// Concatenate state at n-1 and actions
 	x_pred = f*muu;		// Get next predicted state
 
 	// Step 2: Predicted covariance
 	P_pred = F*P_pred*F.transpose()+W*Q*W.transpose();
-//	bearing = imu.getOrientation(IMU::Axes::z);
-//	vTaskDelay(500);
+
 	//Get inputs u_n and z_n
 	if(gps.update()) {
 		validState = true;
@@ -147,15 +147,6 @@ void SF_Nav::update()
 //		imu.calculateLinearVelocity();
 		curr_vel = gps.getVelocity();
 		lwgps_distance_bearing(prev_location.latitude, prev_location.longitude, curr_location.latitude, curr_location.longitude, &dist, &gpsBearing);
-//		bearing = imu.getOrientation(IMU::Axes::z);
-		//Now convert the distance and bearing to and x and y
-//		state.x = state.x + sind(bearing)* dist;
-//		state.y = state.y + cosd(bearing)* dist;
-//		state.b = bearing;
-//		state.vX = sind(bearing) * curr_vel.speed;
-//		state.vY = cosd(bearing) * curr_vel.speed;
-//		state.vB = imu.getAngVel(IMU::Axes::z);
-
 		// Set u_n and z_n, turn IMU frame into world frame
 //		u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
 //				imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
@@ -188,11 +179,6 @@ void SF_Nav::update()
 		// Step 7: Corrected covariance
 		P_n = (I-K_n*H)*P_pred;
 
-//		if(posCtr < LOGLENGTH) {
-//			xPosLog[posCtr] = x_n(0);
-//			yPosLog[posCtr] = x_n(1);
-//			posCtr++;
-//		}
 	}
 }
 
