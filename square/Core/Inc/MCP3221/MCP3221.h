@@ -16,7 +16,7 @@ const uint8_t DEFAULT_NUM_SAMPLES = 10;
 
 const int OFFSET_VOLTS = 2500;
 const int sensitivity = 66;
-const int CURRENT_LIMIT = 29;
+const int CURRENT_LIMIT = 40;
 
 const int vRef = 4990;
 

@@ -35,6 +35,7 @@
 #include <vector>
 #include "MCP3221/MCP3221.h"
 #include "tim.h"
+#define RISHABH //Comment out in Ann Arbor
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -281,7 +282,8 @@ void checkBattery(void*)
 		//If current is ever greater than the limit than switch relay off
 		if(!bat_curr.checkCurrent())
 		{
-			if(!bat_curr.checkCurrent()) {
+			vTaskDelay(10);
+			if(!bat_curr.checkCurrent() && !bat_curr.checkCurrent()) {
 				//Disconnect relay and wait forever
 				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 				//Just wait forever here
@@ -294,13 +296,36 @@ void checkBattery(void*)
 
 void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(5000);
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
-	cont.setMotorDirection(true, true);	// Go forward
-	cont.setMotorSpeed(400, 500);
+	int count  = 0;
+	int speed = 800;
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		cont.setMotorSpeed(speed +50, speed);
+
+		switch (count) {
+			case 0:
+				cont.setMotorDirection(true, true);	// Go forward
+
+				break;
+			case 1:
+				cont.setMotorDirection(true, false);	// Go forward
+				break;
+			case 2:
+				cont.setMotorDirection(false, true);	// Go forward
+				break;
+			case 3:
+				cont.setMotorDirection(false, false);	// Go forward
+				break;
+			default:
+				count = -1;
+				cont.setMotorSpeed(0, 0);
+				break;
+		}
+		count++;
+
 	}
 }
 
@@ -649,7 +674,7 @@ int main(void)
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
+  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
 //  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
