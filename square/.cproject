@@ -95,7 +95,7 @@
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1713738661.2019922056" name="uart_printf.h" rcbsApplicability="disable" resourcePath="Core/Inc/uart_printf.h" toolsToInvoke=""/>
 					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1713738661.887172516" name="controller.h" rcbsApplicability="disable" resourcePath="Core/Inc/Controller/controller.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="Inc/uart_printf.h|Src/stm32f4xx_it.c|Src/main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry excluding="Inc/adc.h|Src/adc.c|Inc/uart_printf.h|Src/stm32f4xx_it.c|Src/main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
