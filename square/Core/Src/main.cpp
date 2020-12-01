@@ -350,7 +350,7 @@ void Receive(void* arg) {
 	radio.OutputPower    = 17;             //17dBm OutputPower
 	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
-	radio.PayloadLength  = 21;
+	radio.PayloadLength  = 27;
 
 	radio.SFSel          = SF12;
 	radio.BWSel          = BW125K;
@@ -364,6 +364,7 @@ void Receive(void* arg) {
 		radio.vGoRx();
 		vTaskDelay(pdMS_TO_TICKS(100));
 		if(radio.bGetMessage(getstr)!=0) {
+			vTaskDelay(pdMS_TO_TICKS(100));
 			// Setting a new geofence
 			if(getstr[0] == 'g') {
 				byte latitude[11];
@@ -800,14 +801,14 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
+  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-//  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
-//  xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
-//  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
+  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
+  xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
+  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
