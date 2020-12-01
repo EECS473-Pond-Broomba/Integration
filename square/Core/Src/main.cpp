@@ -33,9 +33,9 @@
 #include "semphr.h"
 #include "FreeRTOS.h"
 #include <vector>
+#include <stdlib.h>
 #include "MCP3221/MCP3221.h"
 #include "tim.h"
-#define RISHABH //Comment out in Ann Arbor
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -71,7 +71,7 @@ uint8_t Is_First_Captured = 0;
 uint8_t buf[20];
 uint32_t value[2];
 loraClass radio;
-byte getstr[21];
+byte getstr[27];
 byte heartbeat[7] = {'b','r', 'o', 'o', 'm', 'b', 'a'};
 
 //#define PIDPERIOD 500
@@ -81,6 +81,7 @@ byte heartbeat[7] = {'b','r', 'o', 'o', 'm', 'b', 'a'};
 //#define DISTDEADZONE 0.3	// If robot is within this distance of target, motors dont move
 //#define DISTSATURATE 5		// If robot is further than this distance of target, motors move at maximum speed
 #define TESTDELAY 0
+#define RXPERIOD 2000
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -175,7 +176,7 @@ void MovePID(void* arg) {
 		boatState = kf.get_state();
 		// Only start controllers and motors when GPS data is valid
 		if(kf.get_valid()) {
-			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
+			cont.updatePidPosition(boatState.x, boatState.y, boatState.b);
 		}
 
 //		if(stateCounter < TESTDELAY) {
@@ -272,7 +273,7 @@ void checkBattery(void*)
 //	while(bat_curr.getCurrent() < 0.1);
 
 	//Now turn on the relay pin
-	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
 	vTaskDelay(pdMS_TO_TICKS(5));
 
 	while(1)
@@ -282,8 +283,7 @@ void checkBattery(void*)
 		//If current is ever greater than the limit than switch relay off
 		if(!bat_curr.checkCurrent())
 		{
-			vTaskDelay(10);
-			if(!bat_curr.checkCurrent() && !bat_curr.checkCurrent()) {
+			if(!bat_curr.checkCurrent()) {
 				//Disconnect relay and wait forever
 				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 				//Just wait forever here
@@ -296,36 +296,13 @@ void checkBattery(void*)
 
 void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(5000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
-	int count  = 0;
-	int speed = 800;
+	cont.setMotorDirection(true, true);	// Go forward
+	cont.setMotorSpeed(400, 400);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-		cont.setMotorSpeed(speed +50, speed);
-
-		switch (count) {
-			case 0:
-				cont.setMotorDirection(true, true);	// Go forward
-
-				break;
-			case 1:
-				cont.setMotorDirection(true, false);	// Go forward
-				break;
-			case 2:
-				cont.setMotorDirection(false, true);	// Go forward
-				break;
-			case 3:
-				cont.setMotorDirection(false, false);	// Go forward
-				break;
-			default:
-				count = -1;
-				cont.setMotorSpeed(0, 0);
-				break;
-		}
-		count++;
-
 	}
 }
 
@@ -334,7 +311,6 @@ void Heartbeat(void* arg) {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
 	xLastWakeTime = xTaskGetTickCount();
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	radio.Modulation = LORA;
 	radio.COB            = RFM95;
 	radio.Frequency      = 434000;
@@ -342,25 +318,114 @@ void Heartbeat(void* arg) {
 	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
 	radio.PayloadLength  = 21;
-	radio.CrcDisable     = true;	// True for TX and False for RX
 
 	radio.SFSel          = SF12;
 	radio.BWSel          = BW125K;
 	radio.CRSel          = CR4_5;
 
 	radio.vInitialize();
-	radio.vGoStandby();
 
 	while(1) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+		radio.CrcDisable = true;	// True for TX and False for RX
+		radio.vGoStandby();
 		radio.bSendMessage(heartbeat, 7);
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
 
-void Blink(void* arg) {
+// Task that receives data that has been sent over
+void Receive(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(RXPERIOD);
 	xLastWakeTime = xTaskGetTickCount();
+	radio.Modulation = LORA;
+	radio.COB            = RFM95;
+	radio.Frequency      = 434000;
+	radio.OutputPower    = 17;             //17dBm OutputPower
+	radio.PreambleLength = 16;             //16Byte preamble
+	radio.FixedPktLength = false;          //explicit header mode for LoRa
+	radio.PayloadLength  = 21;
+
+	radio.SFSel          = SF12;
+	radio.BWSel          = BW125K;
+	radio.CRSel          = CR4_5;
+
+	radio.vInitialize();
+
+	while(1) {
+//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+		radio.CrcDisable = false;	// True for TX and False for RX
+		radio.vGoRx();
+		vTaskDelay(pdMS_TO_TICKS(100));
+		if(radio.bGetMessage(getstr)!=0) {
+			// Setting a new geofence
+			if(getstr[0] == 'g') {
+				byte latitude[11];
+				byte longitude[13];
+				byte radius[5];
+				// If latitude coordinate is negative, include it, otherwise don't
+				if(getstr[1] == '-') {
+					for(int i = 0; i < 10; ++i) {
+						latitude[i] = getstr[i+1];
+					}
+				}
+				else {
+					for(int i = 0; i < 9; ++i) {
+						latitude[i] = getstr[i+2];
+					}
+				}
+				// If longitude coordinate is negative
+				if(getstr[11] == '-') {
+					for(int i = 0; i < 11; ++i) {
+						longitude[i] = getstr[i+11];
+					}
+				}
+				else {
+					for(int i = 0; i < 10; ++i) {
+						longitude[i] = getstr[i+12];
+					}
+				}
+				if(getstr[22] == '0') {
+					for(int i = 0; i < 3; ++i) {
+						radius[i] = getstr[i+23];
+					}
+				}
+				else {
+					for(int i = 0; i < 4; ++i) {
+						radius[i] = getstr[i+22];
+					}
+				}
+
+				kf.gps.addGeoFence(atof((char*)latitude), atof((char*)longitude), atof((char*)radius));
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Return home
+			else if(getstr[0] == 'r') {
+				cont.setTarget(0, 0);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Start motors
+			else if(getstr[0] == 's') {
+				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Stop motors
+			else if(getstr[0] == 'q') {
+				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Start calibration process
+			else if(getstr[0] == 'c') {
+				kf.setCalibration(true);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+		}
+		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+	}
+}
+
+void Blink(void* arg) {
 	while(1) {
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
 		vTaskDelay(pdMS_TO_TICKS(1000));
@@ -674,9 +739,10 @@ int main(void)
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 1, NULL);
+  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
 //  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
+  xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
