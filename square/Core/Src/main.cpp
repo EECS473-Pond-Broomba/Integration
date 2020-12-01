@@ -73,6 +73,7 @@ uint32_t value[2];
 loraClass radio;
 byte getstr[27];
 byte heartbeat[7] = {'b','r', 'o', 'o', 'm', 'b', 'a'};
+bool servoOpen = false;
 
 //#define PIDPERIOD 500
 #define MOTORMAXDIFF 20
@@ -104,25 +105,27 @@ float timedifference_msec(struct timeval t0, struct timeval t1){
   return (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f;
 }
 
-//void ServoOpen() {
-//	for(pwm=4;pwm<23;pwm++) {
-//	  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
-//	  sprintf((char*)buf, "%u pwm\r\n", (unsigned int)pwm);
-//	  HAL_UART_Transmit(&huart6, buf, 20, HAL_MAX_DELAY);
-//	  HAL_Delay(100);
-//	}
-//	HAL_Delay(200);
-//}
-//
-//void ServoClose() {
-//  for(pwm=22;pwm>=4;pwm--) {
-//	  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
-//	  sprintf((char*)buf, "%u pwm\r\n", (unsigned int)pwm);
-//	  HAL_UART_Transmit(&huart6, buf, 20, HAL_MAX_DELAY);
-//	  HAL_Delay(100);
-//  }
-//  HAL_Delay(200);
-//}
+void ServoOpen() {
+	if(!servoOpen) {
+		for(pwm=4;pwm<23;pwm++) {
+		  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
+		  vTaskDelay(pdMS_TO_TICKS(100));
+		}
+		vTaskDelay(pdMS_TO_TICKS(200));
+		servoOpen = true;
+	}
+}
+
+void ServoClose() {
+	if(servoOpen) {
+		for(pwm=22;pwm>=4;pwm--) {
+		  __HAL_TIM_SetCompare(&htim9, TIM_CHANNEL_2, pwm);
+		  vTaskDelay(pdMS_TO_TICKS(100));
+		}
+		vTaskDelay(pdMS_TO_TICKS(200));
+		servoOpen = false;
+	}
+}
 
 void Sensors(void* arg) {
 	TickType_t xLastWakeTime;
@@ -405,12 +408,12 @@ void Receive(void* arg) {
 				cont.setTarget(0, 0);
 				getstr[0] = '\0';	// Clear out getstr[0]
 			}
-			// Start motors
-			else if(getstr[0] == 's') {
+			// Close relay
+			else if(getstr[0] == 'e') {
 				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
 				getstr[0] = '\0';	// Clear out getstr[0]
 			}
-			// Stop motors
+			// Open relay
 			else if(getstr[0] == 'q') {
 				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 				getstr[0] = '\0';	// Clear out getstr[0]
@@ -418,6 +421,64 @@ void Receive(void* arg) {
 			// Start calibration process
 			else if(getstr[0] == 'c') {
 				kf.setCalibration(true);
+				ServoOpen();
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Close the trash box
+			else if(getstr[0] == 'p') {
+				ServoClose();
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Open the trash box
+			else if(getstr[0] == 'o') {
+				ServoOpen();
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Manual control of boat
+			else if(getstr[0] == 'w') {
+				cont.setManualMode(true);
+				cont.setMotorDirection(true, true);
+				cont.setMotorSpeed(400, 500);
+				vTaskDelay(3000);
+				cont.setMotorSpeed(0, 0);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Manual control of boat
+			else if(getstr[0] == 'a') {
+				cont.setManualMode(true);
+				cont.setMotorDirection(false, true);
+				cont.setMotorSpeed(400, 500);
+				vTaskDelay(3000);
+				cont.setMotorSpeed(0, 0);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Manual control of boat
+			else if(getstr[0] == 's') {
+				cont.setManualMode(true);
+				cont.setMotorDirection(false, false);
+				cont.setMotorSpeed(400, 500);
+				vTaskDelay(3000);
+				cont.setMotorSpeed(0, 0);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Manual control of boat
+			else if(getstr[0] == 'd') {
+				cont.setManualMode(true);
+				cont.setMotorDirection(true, false);
+				cont.setMotorSpeed(400, 500);
+				vTaskDelay(3000);
+				cont.setMotorSpeed(0, 0);
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// Toggle manual mode
+			else if(getstr[0] == 'm') {
+				cont.toggleManualMode();
+				getstr[0] = '\0';	// Clear out getstr[0]
+			}
+			// User telling boat that it is stuck, kill motors and close up the box
+			else if(getstr[0] == 'x') {
+				HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
+				ServoClose();
 				getstr[0] = '\0';	// Clear out getstr[0]
 			}
 		}
@@ -450,7 +511,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -736,13 +798,13 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
+//  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
 //  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
-  xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
+//  xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();

@@ -50,8 +50,12 @@ public:
 
     void setMotorDirection(bool left_forward, bool right_forward);
 
-    void setMotorStart(bool motorStartIn) {
-    	motorStart = motorStartIn;
+    void setManualMode(bool manualMode) {
+    	manual = manualMode;
+    }
+
+    void toggleManualMode() {
+    	manual = !manual;
     }
 
 private:
@@ -62,7 +66,7 @@ private:
 
     int16_t calculate_dist(int16_t x, int16_t y);
     int16_t calculate_bearing(int16_t x, int16_t y);
-    bool motorStart;
+    bool manual;
 };
 
 
