@@ -18,8 +18,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "Controller/controller.h"
 #include "main.h"
+#include "Controller/controller.h"
 #include "spi.h"
 #include "cmsis_os.h"
 #include "i2c.h"
@@ -38,7 +38,7 @@
 #include "tim.h"
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
+//ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c3;
@@ -124,43 +124,43 @@ float timedifference_msec(struct timeval t0, struct timeval t1){
 //  HAL_Delay(200);
 //}
 
-void Sensors(void* arg) {
-	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(10000);
-	xLastWakeTime = xTaskGetTickCount();
-	uint32_t raw;
-	int tdsValue;
-	char bufNew[20];
-
-  while(1) {
-  		vTaskDelayUntil(&xLastWakeTime, xPeriod);
-  		 ///////////////TDS/////////////////////////////////
-  		  // Test: Set GPIO pin high
-  		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-
-  		  // Get ADC value
-  		  HAL_ADC_Start(&hadc1);
-  		  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-  		  raw = HAL_ADC_GetValue(&hadc1);
-  		  tdsValue = (raw * 3.3) / 4096.0;
-
-
-
-  		  //float compensationCoefficient=1.0;//+0.02*(temperature-25.0);
-  		  float compensationVoltage= tdsValue / 1; //compensationCoefficient;
-  		  tdsValue = (133.42*compensationVoltage*compensationVoltage*compensationVoltage - 255.86*compensationVoltage*compensationVoltage + 857.39*compensationVoltage)*0.5;
-
-  		  // Test: Set GPIO pin low
-  		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-
-  		  // Pretend we have to do something else for a while
-//  		  HAL_Delay(100);
-  		  vTaskDelay(pdMS_TO_TICKS(100));
-//  		  ServoOpen();
-//  		  ServoClose();
-
-  }
-}
+//void Sensors(void* arg) {
+//	TickType_t xLastWakeTime;
+//	const TickType_t xPeriod = pdMS_TO_TICKS(10000);
+//	xLastWakeTime = xTaskGetTickCount();
+//	uint32_t raw;
+//	int tdsValue;
+//	char bufNew[20];
+//
+//  while(1) {
+//  		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+//  		 ///////////////TDS/////////////////////////////////
+//  		  // Test: Set GPIO pin high
+//  		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+//
+//  		  // Get ADC value
+//  		  HAL_ADC_Start(&hadc1);
+//  		  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+//  		  raw = HAL_ADC_GetValue(&hadc1);
+//  		  tdsValue = (raw * 3.3) / 4096.0;
+//
+//
+//
+//  		  //float compensationCoefficient=1.0;//+0.02*(temperature-25.0);
+//  		  float compensationVoltage= tdsValue / 1; //compensationCoefficient;
+//  		  tdsValue = (133.42*compensationVoltage*compensationVoltage*compensationVoltage - 255.86*compensationVoltage*compensationVoltage + 857.39*compensationVoltage)*0.5;
+//
+//  		  // Test: Set GPIO pin low
+//  		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+//
+//  		  // Pretend we have to do something else for a while
+////  		  HAL_Delay(100);
+//  		  vTaskDelay(pdMS_TO_TICKS(100));
+////  		  ServoOpen();
+////  		  ServoClose();
+//
+//  }
+//}
 
 // Moves to a target state using PID like a noob
 void MovePID(void* arg) {
@@ -296,12 +296,14 @@ void checkBattery(void*)
 
 void TestMotors(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(5000);
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
-	cont.setMotorDirection(true, true);	// Go forward
-	cont.setMotorSpeed(400, 400);
+	cont.setMotorSpeed(750, 750);
+	bool state = false;
 	while(1) {
+		cont.setMotorDirection(state, !state);
+		state = !state;
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
@@ -469,7 +471,7 @@ int main(void)
   MX_I2C3_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_ADC1_Init();
+  //MX_ADC1_Init();
   MX_SPI3_Init();
 //  MX_TIM5_Init();
 //  MX_TIM9_Init();
@@ -736,12 +738,12 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
-//  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
+  //xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+  //xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
+ xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-//  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
+  //xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
   xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
@@ -811,50 +813,50 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 
-void MX_ADC1_Init(void)
-{
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
-  ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-  */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
-
-}
+//void MX_ADC1_Init(void)
+//{
+//
+//  /* USER CODE BEGIN ADC1_Init 0 */
+//
+//  /* USER CODE END ADC1_Init 0 */
+//
+//  ADC_ChannelConfTypeDef sConfig = {0};
+//
+//  /* USER CODE BEGIN ADC1_Init 1 */
+//
+//  /* USER CODE END ADC1_Init 1 */
+//  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+//  */
+//  hadc1.Instance = ADC1;
+//  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+//  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+//  hadc1.Init.ScanConvMode = DISABLE;
+//  hadc1.Init.ContinuousConvMode = DISABLE;
+//  hadc1.Init.DiscontinuousConvMode = DISABLE;
+//  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+//  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+//  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+//  hadc1.Init.NbrOfConversion = 1;
+//  hadc1.Init.DMAContinuousRequests = DISABLE;
+//  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+//  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+//  */
+//  sConfig.Channel = ADC_CHANNEL_1;
+//  sConfig.Rank = 1;
+//  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//  /* USER CODE BEGIN ADC1_Init 2 */
+//
+//  /* USER CODE END ADC1_Init 2 */
+//
+//}
 
 /**
   * @brief TIM5 Initialization Function

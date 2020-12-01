@@ -8,8 +8,6 @@
 #define MEDIUM 85
 #define MAX 150
 
-#define RISHABH //Comment out in Ann Arbor
-
 //TODO :::::::: Figure out speed ratios for turning
 
 //pwm output timers for each of the pwm for each motor

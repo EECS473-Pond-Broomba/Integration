@@ -27,7 +27,8 @@
 #include "LoRa.h"
 #include "gpio.h"
 #include "spi.h"
-
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 /********************************************************** 
@@ -230,7 +231,7 @@
 void loraClass::vInitialize(void)
 {
  //ClrPOR();
- HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+ HAL_GPIO_WritePin(RST_PORT, RST_PIN, GPIO_PIN_RESET);
  PORIn();
 // DIO0In();
  //vSpiInit();									//init port
@@ -629,12 +630,12 @@ bool loraClass::bSendMessage(byte msg[], byte length)
  		overtime <<= (SFValue-BWValue);
  	else
  		overtime >>= (BWValue-SFValue);
-	HAL_Delay(overtime);			//
+	vTaskDelay(pdMS_TO_TICKS(overtime));			//
  	for(bittime=0;bittime<5000;bittime++)	//about 500ms for overtime
  		{
 		if(DIO0_H())
 			break; 	
-		HAL_Delay(1);
+		vTaskDelay(pdMS_TO_TICKS(1));
  		}
  	vSpiWrite(((word)RegIrqFlags<<8)+AllIrqMask);	//Clear All Interrupt 		
  	vGoStandby();	
@@ -658,12 +659,12 @@ bool loraClass::bSendMessage(byte msg[], byte length)
  	overtime/= 1000;					//unit: ms
  	if(overtime==0) 
  		overtime = 1;
- 	HAL_Delay(overtime);				//
+ 	vTaskDelay(pdMS_TO_TICKS(overtime));				//
  	for(tmp=0;tmp<100;tmp++)			//about 10ms for overtime
  		{
 		if(DIO0_H())
 			break; 	
-		HAL_Delay(1);
+		vTaskDelay(pdMS_TO_TICKS(1));
  		}
  	vGoStandby();	
  	if(tmp>=100)
@@ -730,10 +731,10 @@ void loraClass::vReset(void)
 	case RFM92:						//High Reset; Normal for Low
 	case RFM93:
 		//ClrPOR();
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
-		HAL_Delay(1);				//at least 100us for reset
+		HAL_GPIO_WritePin(RST_PORT, RST_PIN, GPIO_PIN_RESET);
+		vTaskDelay(pdMS_TO_TICKS(1));				//at least 100us for reset
 		//SetPOR();
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(RST_PORT, RST_PIN, GPIO_PIN_SET);
 		break;
 	case RFM95:
 	case RFM96:
@@ -741,16 +742,16 @@ void loraClass::vReset(void)
 	case RFM98:
 	default:
  	//	SetPOR();
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
- 		HAL_Delay(1);				//at least 100us for reset
+		HAL_GPIO_WritePin(RST_PORT, RST_PIN, GPIO_PIN_SET);
+		vTaskDelay(pdMS_TO_TICKS(1));				//at least 100us for reset
  		//ClrPOR();
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(RST_PORT, RST_PIN, GPIO_PIN_RESET);
  		break;		
 	}
  PORIn();							//set POR for free
- HAL_Delay(6);						//wait for ready
+ vTaskDelay(pdMS_TO_TICKS(6));						//wait for ready
  //ClrPOR();							//note: help for LowReset
- HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+ HAL_GPIO_WritePin(RST_PORT, RST_PIN, GPIO_PIN_RESET);
 
  
  tmp = bSpiRead(RegOpMode);
@@ -995,28 +996,25 @@ void loraClass::vSpiBurstRead(byte addr, byte ptr[], byte length)
 }
 
 void loraClass::POROut(void) {
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Pin = RST_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
+  HAL_GPIO_Init(RST_PORT, &GPIO_InitStruct);
 }
 
 void loraClass::PORIn(void) {
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Pin = RST_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
+  HAL_GPIO_Init(RST_PORT, &GPIO_InitStruct);
 }
 
 	
 bool loraClass::DIO0_H() {
-	int pin0 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0);
-	int pin10 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
-	int pin11 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4);
-	int pin12 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5);
+	int pin0 = HAL_GPIO_ReadPin(DIO0_PORT, DIO0_PIN);
 	int pin15 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15);
 	
-	if((pin0&pin15&DIO0)== 1) {
+	if((pin0&pin15)== 1) {
 		return 1;
 	}
 	
@@ -1024,13 +1022,13 @@ bool loraClass::DIO0_H() {
 }
 
 bool loraClass::DIO0_L() {
-	int pin0 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0);
-	int pin10 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
-	int pin11 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4);
-	int pin12 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5);
+	int pin0 = HAL_GPIO_ReadPin(DIO0_PORT, DIO0_PIN);
+//	int pin10 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
+//	int pin11 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4);
+//	int pin12 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5);
 	int pin15 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15);
 	
-	if((pin0&pin10&pin11&pin12&pin15&DIO0)==0) {
+	if((pin0&/*pin10&pin11&pin12&*/pin15)==0) {
 		return 1;
 	}
 	

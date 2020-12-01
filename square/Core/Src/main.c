@@ -20,7 +20,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include "adc.h"
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
@@ -95,7 +94,6 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_ADC1_Init();
   MX_TIM5_Init();
   MX_TIM9_Init();
   MX_USART6_UART_Init();

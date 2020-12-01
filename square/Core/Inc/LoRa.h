@@ -62,6 +62,19 @@
 	#define	DIO3	0x20		// 0          0          1
 	#define	DIO2    0x40		// 0          0          1
 	#define	DIO1    0x80		// 0          0          1
+
+		//ADD PINOUTS
+	#ifdef RISHABH
+		#define	DIO0_PORT GPIOA
+		#define DIO0_PIN GPIO_PIN_1
+		#define RST_PORT GPIOA
+		#define RST_PIN GPIO_PIN_0
+	#else
+		#define	DIO0_PORT GPIOC
+		#define DIO0_PIN GPIO_PIN_0
+		#define RST_PORT GPIOC
+		#define RST_PIN GPIO_PIN_1
+	#endif
 	
 	//Output
 //	#define POROut()	(GPIOC->MODER[3] |= 1)              //Set POR as an output
