@@ -17,6 +17,7 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "Controller/controller.h"
@@ -52,6 +53,8 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart6;
 
 xSemaphoreHandle gps_sem;
+xSemaphoreHandle rec_sem;
+
 MCP3221 bat_curr;
 SF_Nav kf;
 controller cont;
@@ -339,12 +342,12 @@ void Heartbeat(void* arg) {
 // Task that receives data that has been sent over
 void Receive(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(RXPERIOD);
-	xLastWakeTime = xTaskGetTickCount();
+//	const TickType_t xPeriod = pdMS_TO_TICKS(RXPERIOD);
+//	xLastWakeTime = xTaskGetTickCount();
 	radio.Modulation = LORA;
 	radio.COB            = RFM95;
-	radio.Frequency      = 434000;
-	radio.OutputPower    = 17;             //17dBm OutputPower
+	radio.Frequency      = 915000;
+	radio.OutputPower    = 19;             //17dBm OutputPower
 	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
 	radio.PayloadLength  = 21;
@@ -355,11 +358,16 @@ void Receive(void* arg) {
 
 	radio.vInitialize();
 
+	rec_sem = xSemaphoreCreateBinary();
+
 	while(1) {
 //		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 		radio.CrcDisable = false;	// True for TX and False for RX
 		radio.vGoRx();
 		vTaskDelay(pdMS_TO_TICKS(100));
+
+		xSemaphoreTake(rec_sem, portMAX_DELAY);
+
 		if(radio.bGetMessage(getstr)!=0) {
 			// Setting a new geofence
 			if(getstr[0] == 'g') {
@@ -423,7 +431,7 @@ void Receive(void* arg) {
 				getstr[0] = '\0';	// Clear out getstr[0]
 			}
 		}
-		vTaskDelayUntil(&xLastWakeTime, xPeriod);
+		//vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
 
@@ -1020,6 +1028,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	static BaseType_t xHigherPriorityTaskWoken;
+
+	xHigherPriorityTaskWoken = false;
+	if(GPIO_Pin == DIO0_PIN)
+	{
+		xSemaphoreGiveFromISR(rec_sem, &xHigherPriorityTaskWoken);
+	}
+portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 /**
