@@ -281,7 +281,7 @@ void checkBattery(void*)
 //	while(bat_curr.getCurrent() < 0.1);
 
 	//Now turn on the relay pin
-//	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_SET);
 	vTaskDelay(pdMS_TO_TICKS(5));
 
 	while(1)
@@ -307,7 +307,7 @@ void TestMotors(void* arg) {
 	const TickType_t xPeriod = pdMS_TO_TICKS(5000);
 	xLastWakeTime = xTaskGetTickCount();
 	cont.init();
-	cont.setMotorSpeed(750, 750);
+	cont.setMotorSpeed(550, 550);
 	bool state = false;
 	while(1) {
 		cont.setMotorDirection(state, !state);
@@ -451,7 +451,7 @@ void Receive(void* arg) {
 			else if(getstr[0] == 'w') {
 				cont.setManualMode(true);
 				cont.setMotorDirection(true, true);
-				cont.setMotorSpeed(400, 500);
+				cont.setMotorSpeed(500, 580);
 				vTaskDelay(3000);
 				cont.setMotorSpeed(0, 0);
 				getstr[0] = '\0';	// Clear out getstr[0]
@@ -460,7 +460,7 @@ void Receive(void* arg) {
 			else if(getstr[0] == 'a') {
 				cont.setManualMode(true);
 				cont.setMotorDirection(false, true);
-				cont.setMotorSpeed(400, 500);
+				cont.setMotorSpeed(600, 680);
 				vTaskDelay(3000);
 				cont.setMotorSpeed(0, 0);
 				getstr[0] = '\0';	// Clear out getstr[0]
@@ -469,7 +469,7 @@ void Receive(void* arg) {
 			else if(getstr[0] == 's') {
 				cont.setManualMode(true);
 				cont.setMotorDirection(false, false);
-				cont.setMotorSpeed(400, 500);
+				cont.setMotorSpeed(600, 680);
 				vTaskDelay(3000);
 				cont.setMotorSpeed(0, 0);
 				getstr[0] = '\0';	// Clear out getstr[0]
@@ -478,7 +478,7 @@ void Receive(void* arg) {
 			else if(getstr[0] == 'd') {
 				cont.setManualMode(true);
 				cont.setMotorDirection(true, false);
-				cont.setMotorSpeed(400, 500);
+				cont.setMotorSpeed(600, 680);
 				vTaskDelay(3000);
 				cont.setMotorSpeed(0, 0);
 				getstr[0] = '\0';	// Clear out getstr[0]
@@ -811,14 +811,14 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-//  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
+  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
 //  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
-  xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
-  xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
+  xTaskCreate(Receive, "rx", 256, NULL, 2, NULL);
+  xTaskCreate(Blink, "blink", 128, NULL, 0, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();
 //
