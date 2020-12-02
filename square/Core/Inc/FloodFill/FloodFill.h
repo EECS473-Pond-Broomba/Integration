@@ -17,15 +17,18 @@
 
 class FloodFill {
 public:
-	FloodFill();
+	FloodFill(GPS* gpsIn, controller* controllerIn);
 	virtual ~FloodFill();
 
 	void update(int x_curr, int y_curr, int bear);
+
+	void setStart(double latitude, double longitude);
 
 private:
 	std::set<std::pair<int, int> > visisted_set;
 	GPS* gps;
 	controller* robot;
+	std::pair<double, double> startCoordinate;
 
 	void set_adj_pos(std::pair<int, int> *curr, std::pair<int, int> *adj)
 	{

@@ -7,9 +7,10 @@
 
 #include <FloodFill/FloodFill.h>
 
-FloodFill::FloodFill() {
+FloodFill::FloodFill(GPS* gpsIn, controller* controllerIn) {
 	// TODO Auto-generated constructor stub
-
+	gps = gpsIn;
+	robot = controllerIn;
 }
 
 FloodFill::~FloodFill() {
@@ -50,7 +51,9 @@ void FloodFill::update(int x_curr, int y_curr, int bear)
 		else
 		{
 			//TODO:Change this to the geofence center position
-			robot->setTarget(x_curr, y_curr);
+//			double dist, geofenceBearing;
+//			lwgps_distance_bearing(startCoordinate.first, startCoordinate.second, gps->getGeofence().latitude, gps->getGeofence().longitude, &dist, &gpsBearing);
+//			robot->setTarget(x_curr, y_curr);
 		}
 	}
 	//We are not in the geofence so move to the center
@@ -117,5 +120,10 @@ int FloodFill::num_visited_adj_block(std::pair<int, int> pos)
 	}
 
 	return val;
+}
+
+void FloodFill::setStart(double latitude, double longitude) {
+	startCoordinate.first = latitude;
+	startCoordinate.second = longitude;
 }
 

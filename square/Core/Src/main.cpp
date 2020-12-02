@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include "MCP3221/MCP3221.h"
 #include "tim.h"
+#include "FloodFill/FloodFill.h"
 
 /* Private variables ---------------------------------------------------------*/
 //ADC_HandleTypeDef hadc1;
@@ -59,6 +60,7 @@ MCP3221 bat_curr;
 SF_Nav kf;
 controller cont;
 state_var boatState;		// Stores current state of the boat
+//FloodFill ff(&kf.gps, &cont);
 std::vector<state_var> targetStates;	// States that we want boat to be at
 std::vector<state_var> testStates;
 int targetCounter = 0;
@@ -349,7 +351,7 @@ void Receive(void* arg) {
 //	xLastWakeTime = xTaskGetTickCount();
 	radio.Modulation = LORA;
 	radio.COB            = RFM95;
-	radio.Frequency      = 915000;
+	radio.Frequency      = 434000;
 	radio.OutputPower    = 19;             //17dBm OutputPower
 	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
@@ -809,12 +811,12 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-//  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
+  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
 //  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
-  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
+//  xTaskCreate(TestMotors, "testMotors", 1024, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
+//  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
   xTaskCreate(Receive, "rx", 128, NULL, 2, NULL);
   xTaskCreate(Blink, "blink", 128, NULL, 1, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY

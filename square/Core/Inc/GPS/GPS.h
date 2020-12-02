@@ -100,6 +100,10 @@ public:
 		return curr_velocity;
 	}
 
+	geofence getGeofence() {
+		return gf_status;
+	}
+
 	char data[GPS_MSG_SIZE];
 	bool has_data;
 
