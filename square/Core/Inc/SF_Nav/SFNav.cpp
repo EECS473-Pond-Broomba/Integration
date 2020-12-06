@@ -72,38 +72,38 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	P_n = I;
 	P_pred = I;
 	// Get an estimate for w, Q and v, R
-	w << gpsErrorSum / (NUMCAL-1),
-			gpsErrorSum / (NUMCAL-1),
-		WNOISE,
-		gpsVelErrorSum / (NUMCAL-1),
-		gpsVelErrorSum / (NUMCAL-1),
-		imuAngVelErrorSum / (NUMCAL-1);
+	w << 	WNOISE,
+			WNOISE,
+			WNOISE,
+			WNOISE,
+			WNOISE,
+			WNOISE;
 	// Jacobian of w w.r.t states
-	W << gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0, 0,
-		 0, gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0,
+	W << WNOISE, 0, 0, 0, 0, 0,
+		 0, WNOISE, 0, 0, 0, 0,
 		 0, 0, WNOISE, 0, 0, 0,
-		 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0, 0,
-		 0, 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0,
-		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
+		 0, 0, 0, WNOISE, 0, 0,
+		 0, 0, 0, 0, WNOISE, 0,
+		 0, 0, 0, 0, 0, WNOISE;
 	Q << 10, 0, 0, 0, 0, 0,
 		 0, 10, 0, 0, 0, 0,
 		 0, 0, 1, 0, 0, 0,
 		 0, 0, 0, 1, 0, 0,
 		 0, 0, 0, 0, 1, 0,
 		 0, 0, 0, 0, 0, 1;
-	v << VNOISE,
-		VNOISE,
-		VNOISE,
-		VNOISE*10.0,
-		VNOISE*1.0,
-		VNOISE;
+	v << 	gpsErrorSum / (NUMCAL-1),
+			gpsErrorSum / (NUMCAL-1),
+			VNOISE,
+			gpsVelErrorSum / (NUMCAL-1),
+			gpsVelErrorSum / (NUMCAL-1),
+			imuAngVelErrorSum / (NUMCAL-1);
 	// Jacobian of w w.r.t states
-	V << VNOISE, 0, 0, 0, 0, 0,
-		 0, VNOISE, 0, 0, 0, 0,
+	V << gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0, 0,
+		 0, gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0,
 		 0, 0, VNOISE, 0, 0, 0,
-		 0, 0, 0, VNOISE*10.0, 0, 0,
-		 0, 0, 0, 0, VNOISE*1.0, 0,
-		 0, 0, 0, 0, 0, VNOISE;
+		 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0, 0,
+		 0, 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0,
+		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
 	R << 1, 0, 0, 0, 0, 0,
 		 0, 1, 0, 0, 0, 0,
 		 0, 0, 0.1, 0, 0, 0,
