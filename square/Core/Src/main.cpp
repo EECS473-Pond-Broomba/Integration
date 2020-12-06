@@ -124,12 +124,12 @@ void lora_init()
 	radio.vInitialize();
 }
 
-bool lora_tx(char* msg, size_t size)
+uint8_t lora_tx(char* msg, size_t size)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	radio.CrcDisable = true;	// True for TX and False for RX
 	radio.vGoStandby();
-	return radio.bSendMessage(msg, size);
+	return radio.bSendMessage((byte*)msg, size);
 }
 
 // ---------------------------- Our Tasks --------------------------------------
@@ -294,6 +294,15 @@ void UpdateKF(void* arg) {
 		kf.update();
 		boatState = kf.get_state();
 		int dummy = 0;
+		char kalmanXStr[16];
+		char kalmanYStr[16];
+		char kalmanBStr[16];
+		sprintf(kalmanXStr, "kalmanX: %f", boatState.x);
+		sprintf(kalmanYStr, "kalmanY: %f", boatState.y);
+		sprintf(kalmanYStr, "kalmanB: %f", boatState.b);
+		lora_tx(kalmanXStr, 16);
+		lora_tx(kalmanYStr, 16);
+		lora_tx(kalmanBStr, 16);
 //		uart_printf("some\r\n");
 //		vTaskDelay(1000);
 	}
@@ -303,6 +312,7 @@ void UpdateKF(void* arg) {
 void checkBattery(void*)
 {
 	bat_curr.init(&hi2c3, 0x4f, 1);
+	lora_init();
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 	//Wait while bat_curr is less than 0.1 A
 //	while(bat_curr.getCurrent() < 0.1);
@@ -351,9 +361,9 @@ void Heartbeat(void* arg) {
 	xLastWakeTime = xTaskGetTickCount();
 	radio.Modulation = LORA;
 	radio.COB            = RFM95;
-	radio.Frequency      = 434000;
-	radio.OutputPower    = 17;             //17dBm OutputPower
-	radio.PreambleLength = 16;         init    //16Byte preamble
+	radio.Frequency      = 915000;
+	radio.OutputPower    = 19;             //17dBm OutputPower
+	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
 	radio.PayloadLength  = 21;
 
@@ -367,7 +377,13 @@ void Heartbeat(void* arg) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 		radio.CrcDisable = true;	// True for TX and False for RX
 		radio.vGoStandby();
-		radio.bSendMessage(heartbeat, 7);
+//		radio.bSendMessage(heartbeat, 7);
+		char targetXStr[16];
+		char targetYStr[16];
+		sprintf(targetXStr, "targetX: %i", cont.targetX);
+		sprintf(targetYStr, "targetY: %i", cont.targetY);
+		lora_tx(targetXStr, 16);
+		lora_tx(targetYStr, 16);
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
@@ -831,15 +847,16 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
-  lora_init();
+//  lora_init();
+//  lora_tx((char*)heartbeat, 7);
   cont.init();
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "pid", 1024, NULL, 1, NULL);
   xTaskCreate(MoveLinear, "linear", 2048, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 512, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-//  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
-  xTaskCreate(Receive, "rx", 256, NULL, 2, NULL);
+  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 2, NULL);
+  xTaskCreate(Receive, "rx", 256, NULL, 1, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 0, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();

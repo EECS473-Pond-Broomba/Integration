@@ -11,6 +11,8 @@
 #include "IMU/IMU.h"
 #include "GPS/GPS.h"
 #include "Eigen/Dense"
+#include "main.h"
+#include <stdio.h>"
 
 struct state_var
 {

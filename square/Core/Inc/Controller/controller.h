@@ -2,6 +2,8 @@
 #define CONT_H_INC
 
 #include "stdint.h"
+#include "main.h"
+#include <stdio.h>
 
 #define MAX_DUTY_CYCLE 750
 #define MIN_DUTY_CYCLE 500
@@ -59,9 +61,9 @@ public:
     	manual = !manual;
     }
 
+    int16_t targetX, targetY;
 private:
     uint16_t old_distance, old_bearing;
-    int16_t targetX, targetY;
     int pid_p_dist, pid_i_dist, pid_d_dist;
     int pid_p_bear, pid_i_bear, pid_d_bear;
 

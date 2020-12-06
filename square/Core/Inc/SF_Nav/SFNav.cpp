@@ -34,7 +34,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	// Calibrate Q matrix
 	prev_location.latitude = 0.0;
 	prev_location.longitude = 0.0;
-	while(!calibrate) {};	// Wait for calibrate to go true
+//	while(!calibrate) {};	// Wait for calibrate to go true
 	for(int i = 0; i < NUMCAL; i += 0) {
 		if(gps.update()) {
 			prev_location = curr_location;
@@ -187,6 +187,15 @@ void SF_Nav::update()
 		P_n = (I-K_n*H)*P_pred;
 
 	}
+	char kalmanXStr[16];
+	char kalmanYStr[16];
+	char kalmanBStr[16];
+	sprintf(kalmanXStr, "kalmanX: %f", x_n(0));
+	sprintf(kalmanYStr, "kalmanY: %f", x_n(1));
+	sprintf(kalmanYStr, "kalmanB: %f", x_n(2));
+	lora_tx(kalmanXStr, 16);
+	lora_tx(kalmanYStr, 16);
+	lora_tx(kalmanBStr, 16);
 }
 
 state_var SF_Nav::get_state() {

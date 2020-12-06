@@ -80,6 +80,7 @@ void Error_Handler(void);
 #define KALMAN_REFRESH_TIME 0.1
 #define RELAY_PIN GPIO_PIN_13
 #define RELAY_PORT GPIOB
+uint8_t lora_tx(char* msg, size_t size);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
