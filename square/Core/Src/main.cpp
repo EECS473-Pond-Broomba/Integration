@@ -128,11 +128,13 @@ void lora_init()
 
 bool lora_tx(char* msg, size_t size)
 {
-
+	xSemaphoreTake(trans_sem, portMAX_DELAY);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	radio.CrcDisable = true;	// True for TX and False for RX
 	radio.vGoStandby();
-	return radio.bSendMessage(msg, size);
+	bool val =  radio.bSendMessage(msg, size);
+	xSemaphoreGive(trans_sem);
+	return val;
 }
 
 // ---------------------------- Our Tasks --------------------------------------
