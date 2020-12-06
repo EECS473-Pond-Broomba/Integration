@@ -34,7 +34,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	// Calibrate Q matrix
 	prev_location.latitude = 0.0;
 	prev_location.longitude = 0.0;
-//	while(!calibrate) {};	// Wait for calibrate to go true
+	while(!calibrate) {};	// Wait for calibrate to go true
 	for(int i = 0; i < NUMCAL; i += 0) {
 		if(gps.update()) {
 			prev_location = curr_location;
@@ -87,10 +87,10 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 		 0, 0, 0, 0, 0, WNOISE;
 	Q << 10, 0, 0, 0, 0, 0,
 		 0, 10, 0, 0, 0, 0,
-		 0, 0, 1, 0, 0, 0,
-		 0, 0, 0, 1, 0, 0,
-		 0, 0, 0, 0, 1, 0,
-		 0, 0, 0, 0, 0, 1;
+		 0, 0, 2, 0, 0, 0,
+		 0, 0, 0, 4, 0, 0,
+		 0, 0, 0, 0, 4, 0,
+		 0, 0, 0, 0, 0, 5;
 	v << 	gpsErrorSum / (NUMCAL-1),
 			gpsErrorSum / (NUMCAL-1),
 			VNOISE,
@@ -104,9 +104,9 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 		 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0, 0,
 		 0, 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0,
 		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
-	R << 1, 0, 0, 0, 0, 0,
-		 0, 1, 0, 0, 0, 0,
-		 0, 0, 0.1, 0, 0, 0,
+	R << 3, 0, 0, 0, 0, 0,
+		 0, 3, 0, 0, 0, 0,
+		 0, 0, 0.5, 0, 0, 0,
 		 0, 0, 0, 1, 0, 0,
 		 0, 0, 0, 0, 5, 0,
 		 0, 0, 0, 0, 0, 1;
@@ -126,15 +126,21 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 void SF_Nav::update()
 {
 	double dist, bearing, gpsBearing;
-	bearing = imu.getOrientation(IMU::Axes::z);
-	u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
-			imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
-	// Step 1: Predicted mean
-	muu << x_n, u_n;	// Concatenate state at n-1 and actions
-	x_pred = f*muu;		// Get next predicted state
+	bearing = imu.getOrientation(IMU::Axes::z) + 90;
+	if(bearing >= 360) {
+		bearing -= 360;
+	}
+	// Sometimes IMU is stupid and reads 0xFFFF which is impossible since IMU orientation range is 0-360
+	if(bearing >= 0) {
+		u_n <<  imu.getLinearAcceleration(IMU::Axes::x)*cosd(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*sind(bearing),
+				imu.getLinearAcceleration(IMU::Axes::x)*sind(bearing)+imu.getLinearAcceleration(IMU::Axes::y)*cosd(bearing);
+		// Step 1: Predicted mean
+		muu << x_n, u_n;	// Concatenate state at n-1 and actions
+		x_pred = f*muu;		// Get next predicted state
 
-	// Step 2: Predicted covariance
-	P_pred = F*P_pred*F.transpose()+W*Q*W.transpose();
+		// Step 2: Predicted covariance
+		P_pred = F*P_pred*F.transpose()+W*Q*W.transpose();
+	}
 
 	//Get inputs u_n and z_n
 	if(gps.update()) {

@@ -35,6 +35,8 @@
 #include "FreeRTOS.h"
 #include <vector>
 #include <stdlib.h>
+#include <iomanip>
+#include <sstream>
 #include "MCP3221/MCP3221.h"
 #include "tim.h"
 #include "FloodFill/FloodFill.h"
@@ -104,6 +106,8 @@ double distanceBetweenStates(state_var &state1, state_var &state2) {
 double bearingBetweenStates(state_var &state1, state_var &state2) {
 	return atan2(state1.y - state2.y, state1.x - state2.x) * (180.0/3.141592653589793238463);
 }
+
+
 
 // ---------------------------- Our Tasks --------------------------------------
 float timedifference_msec(struct timeval t0, struct timeval t1){
@@ -216,7 +220,7 @@ void MoveLinear(void* arg) {
 	cont.init();
 	kf.init(&huart6, &hi2c1, KALMAN_REFRESH_TIME);
 //	vTaskDelay(pdMS_TO_TICKS(10000));
-	cont.setTarget(0, 0);
+	cont.setTarget(0, 6);
 	while(1) {
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 		kf.update();
@@ -326,7 +330,7 @@ void Heartbeat(void* arg) {
 	radio.COB            = RFM95;
 	radio.Frequency      = 434000;
 	radio.OutputPower    = 17;             //17dBm OutputPower
-	radio.PreambleLength = 16;             //16Byte preamble
+	radio.PreambleLength = 16;         init    //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
 	radio.PayloadLength  = 21;
 
@@ -487,6 +491,18 @@ void Receive(void* arg) {
 				ServoClose();
 				getstr[0] = '\0';	// Clear out getstr[0]
 			}
+			// Sends x and y boat state
+//			else if(getstr[0] == 'b') {
+//				radio.CrcDisable = true;	// True for TX and False for RX
+//				radio.vGoStandby();
+//				boatState = kf.get_state();
+//				std::stringstream stream;
+//				stream << std::fixed << std::setprecision(2) << boatState.x;
+//				std::string s = stream.str();
+//				byte pos[6];
+//				pos = (byte)s.c_str();
+//				getstr[0] = '\0';	// Clear out getstr[0]
+//			}
 		}
 		//vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
@@ -806,12 +822,12 @@ int main(void)
    */
   cont.init();
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
-//  xTaskCreate(MovePID, "noob", 1024, NULL, 1, NULL);
-//  xTaskCreate(MoveLinear, "chad", 2048, NULL, 1, NULL);
+//  xTaskCreate(MovePID, "pid", 1024, NULL, 1, NULL);
+  xTaskCreate(MoveLinear, "linear", 2048, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 512, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
 //  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 0, NULL);
-//  xTaskCreate(Receive, "rx", 256, NULL, 2, NULL);
+  xTaskCreate(Receive, "rx", 256, NULL, 2, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 0, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();

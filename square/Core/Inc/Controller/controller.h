@@ -9,6 +9,7 @@
 
 #define FAR_DIST 12
 #define CLOSE_DIST 2
+#define CLOSE_ENOUGH 0.5
 #define WIDE_ANG 30
 
 #define KP_Dist 5
