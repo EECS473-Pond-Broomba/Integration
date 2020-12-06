@@ -107,7 +107,30 @@ double bearingBetweenStates(state_var &state1, state_var &state2) {
 	return atan2(state1.y - state2.y, state1.x - state2.x) * (180.0/3.141592653589793238463);
 }
 
+void lora_init()
+{
+	radio.Modulation = LORA;
+	radio.COB            = RFM95;
+	radio.Frequency      = 915000;
+	radio.OutputPower    = 19;             //17dBm OutputPower
+	radio.PreambleLength = 16;             //16Byte preamble
+	radio.FixedPktLength = false;          //explicit header mode for LoRa
+	radio.PayloadLength  = 27;
 
+	radio.SFSel          = SF12;
+	radio.BWSel          = BW125K;
+	radio.CRSel          = CR4_5;
+
+	radio.vInitialize();
+}
+
+bool lora_tx(char* msg, size_t size)
+{
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	radio.CrcDisable = true;	// True for TX and False for RX
+	radio.vGoStandby();
+	return radio.bSendMessage(msg, size);
+}
 
 // ---------------------------- Our Tasks --------------------------------------
 float timedifference_msec(struct timeval t0, struct timeval t1){
@@ -354,19 +377,7 @@ void Receive(void* arg) {
 	TickType_t xLastWakeTime;
 //	const TickType_t xPeriod = pdMS_TO_TICKS(RXPERIOD);
 //	xLastWakeTime = xTaskGetTickCount();
-	radio.Modulation = LORA;
-	radio.COB            = RFM95;
-	radio.Frequency      = 915000;
-	radio.OutputPower    = 19;             //17dBm OutputPower
-	radio.PreambleLength = 16;             //16Byte preamble
-	radio.FixedPktLength = false;          //explicit header mode for LoRa
-	radio.PayloadLength  = 27;
 
-	radio.SFSel          = SF12;
-	radio.BWSel          = BW125K;
-	radio.CRSel          = CR4_5;
-
-	radio.vInitialize();
 
 	rec_sem = xSemaphoreCreateBinary();
 
@@ -820,6 +831,7 @@ int main(void)
 	  testStates.push_back(temp);
    }
    */
+  lora_init();
   cont.init();
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "pid", 1024, NULL, 1, NULL);
