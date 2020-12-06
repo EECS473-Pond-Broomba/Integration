@@ -57,6 +57,7 @@ UART_HandleTypeDef huart6;
 
 xSemaphoreHandle gps_sem;
 xSemaphoreHandle rec_sem;
+xSemaphoreHandle trans_sem;
 
 MCP3221 bat_curr;
 SF_Nav kf;
@@ -122,10 +123,12 @@ void lora_init()
 	radio.CRSel          = CR4_5;
 
 	radio.vInitialize();
+	trans_sem = xSemaphoreCreateBinary();
 }
 
 bool lora_tx(char* msg, size_t size)
 {
+
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	radio.CrcDisable = true;	// True for TX and False for RX
 	radio.vGoStandby();
