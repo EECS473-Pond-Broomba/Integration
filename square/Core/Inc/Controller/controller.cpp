@@ -25,12 +25,12 @@ void controller::updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t b
 {
 	if(!manual) {
 		int16_t curr_dist = calculate_dist(x_curr, y_curr);
-		char targetXStr[16];
-		char targetYStr[16];
-		sprintf(targetXStr, "targetX: %i", targetX);
-		sprintf(targetYStr, "targetY: %i", targetY);
-		lora_tx(targetXStr, 16);
-		lora_tx(targetYStr, 16);
+//		char targetXStr[16];
+//		char targetYStr[16];
+//		sprintf(targetXStr, "targetX: %i", targetX);
+//		sprintf(targetYStr, "targetY: %i", targetY);
+//		lora_tx(targetXStr, 16);
+//		lora_tx(targetYStr, 16);
 		if(curr_dist > CLOSE_ENOUGH) {
 			int16_t tempBearing = calculate_bearing(x_curr, y_curr) % 360;
 			while(tempBearing < 0) {
@@ -46,22 +46,26 @@ void controller::updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t b
 			if(bearingError > WIDE_ANG) {
 				setDirection(true, false);
 				setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
-				char l_pwmStr[11];
-				char r_pwmStr[11];
-				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
-				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
-				lora_tx(l_pwmStr, 11);
-				lora_tx(r_pwmStr, 11);
+				leftPWM = MIN_DUTY_CYCLE;
+				rightPWM = -MIN_DUTY_CYCLE;
+//				char l_pwmStr[11];
+//				char r_pwmStr[11];
+//				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
+//				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
+//				lora_tx(l_pwmStr, 11);
+//				lora_tx(r_pwmStr, 11);
 			}
 			else if(bearingError < -WIDE_ANG) {
 				setDirection(false, true);
 				setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
-				char l_pwmStr[11];
-				char r_pwmStr[11];
-				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
-				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
-				lora_tx(l_pwmStr, 11);
-				lora_tx(r_pwmStr, 11);
+				leftPWM = -MIN_DUTY_CYCLE;
+				rightPWM = MIN_DUTY_CYCLE;
+//				char l_pwmStr[11];
+//				char r_pwmStr[11];
+//				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
+//				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
+//				lora_tx(l_pwmStr, 11);
+//				lora_tx(r_pwmStr, 11);
 			}
 			// No point turn needed
 			else {
@@ -97,19 +101,22 @@ void controller::updateLinearPosition(int16_t x_curr, int16_t y_curr, uint16_t b
 					l_pwm -= rotPWM;
 					r_pwm += rotPWM;
 				}
-
+				leftPWM = l_pwm;
+				rightPWM = r_pwm;
 				setSpeed(l_pwm, r_pwm);
-				char l_pwmStr[10];
-				char r_pwmStr[10];
-				sprintf(l_pwmStr, "l_pwm: %i", l_pwm);
-				sprintf(r_pwmStr, "r_pwm: %i", r_pwm);
-				lora_tx(l_pwmStr, 10);
-				lora_tx(r_pwmStr, 10);
+//				char l_pwmStr[10];
+//				char r_pwmStr[10];
+//				sprintf(l_pwmStr, "l_pwm: %i", l_pwm);
+//				sprintf(r_pwmStr, "r_pwm: %i", r_pwm);
+//				lora_tx(l_pwmStr, 10);
+//				lora_tx(r_pwmStr, 10);
 			}
 		}
 		// If we are close enough, don't move
 		else {
 			setSpeed(0, 0);
+			leftPWM = 0;
+			rightPWM = 0;
 		}
 	}
 }
@@ -120,12 +127,12 @@ void controller::updatePidPosition(int16_t x_curr, int16_t y_curr, uint16_t bear
 		//First calculate distance
 		int16_t dist_error = calculate_dist(x_curr, y_curr);
 		if(dist_error > CLOSE_ENOUGH) {
-			char targetXStr[11];
-			char targetYStr[11];
-			sprintf(targetXStr, "targetX: %i", targetX);
-			sprintf(targetYStr, "targetY: %i", targetY);
-			lora_tx(targetXStr, 11);
-			lora_tx(targetYStr, 11);
+//			char targetXStr[11];
+//			char targetYStr[11];
+//			sprintf(targetXStr, "targetX: %i", targetX);
+//			sprintf(targetYStr, "targetY: %i", targetY);
+//			lora_tx(targetXStr, 11);
+//			lora_tx(targetYStr, 11);
 			setSpeed(0, 0);
 			//If the bearing error is very large then we do a fixed turn
 			int16_t tempBearing = calculate_bearing(x_curr, y_curr) % 360;
@@ -142,22 +149,26 @@ void controller::updatePidPosition(int16_t x_curr, int16_t y_curr, uint16_t bear
 			if(bearingError > WIDE_ANG) {
 				setDirection(true, false);
 				setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
-				char l_pwmStr[11];
-				char r_pwmStr[11];
-				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
-				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
-				lora_tx(l_pwmStr, 11);
-				lora_tx(r_pwmStr, 11);
+				leftPWM = MIN_DUTY_CYCLE;
+				rightPWM = MIN_DUTY_CYCLE;
+//				char l_pwmStr[11];
+//				char r_pwmStr[11];
+//				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
+//				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
+//				lora_tx(l_pwmStr, 11);
+//				lora_tx(r_pwmStr, 11);
 			}
 			else if(bearingError < -WIDE_ANG) {
 				setDirection(false, true);
 				setSpeed(MIN_DUTY_CYCLE, MIN_DUTY_CYCLE);
-				char l_pwmStr[11];
-				char r_pwmStr[11];
-				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
-				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
-				lora_tx(l_pwmStr, 11);
-				lora_tx(r_pwmStr, 11);
+				leftPWM = MIN_DUTY_CYCLE;
+				rightPWM = MIN_DUTY_CYCLE;
+//				char l_pwmStr[11];
+//				char r_pwmStr[11];
+//				sprintf(l_pwmStr, "l_pwm: %i", MIN_DUTY_CYCLE);
+//				sprintf(r_pwmStr, "r_pwm: %i", MIN_DUTY_CYCLE);
+//				lora_tx(l_pwmStr, 11);
+//				lora_tx(r_pwmStr, 11);
 			}
 			//Use PID to go to target
 			else {
@@ -214,25 +225,28 @@ void controller::updatePidPosition(int16_t x_curr, int16_t y_curr, uint16_t bear
 
 				l_pwm = pid_dist_out + pid_bear_out;
 				r_pwm = pid_dist_out - pid_bear_out;
-
+				leftPWM = l_pwm;
+				rightPWM = r_pwm;
 				setSpeed(l_pwm, r_pwm);
-				char l_pwmStr[11];
-				char r_pwmStr[11];
-				sprintf(l_pwmStr, "l_pwm: %i", l_pwm);
-				sprintf(r_pwmStr, "r_pwm: %i", r_pwm);
-				lora_tx(l_pwmStr, 11);
-				lora_tx(r_pwmStr, 11);
+//				char l_pwmStr[11];
+//				char r_pwmStr[11];
+//				sprintf(l_pwmStr, "l_pwm: %i", l_pwm);
+//				sprintf(r_pwmStr, "r_pwm: %i", r_pwm);
+//				lora_tx(l_pwmStr, 11);
+//				lora_tx(r_pwmStr, 11);
 			}
 			old_bearing = bearingError;
 		}
 		else {
 			setSpeed(0, 0);
-			char l_pwmStr[11];
-			char r_pwmStr[11];
-			sprintf(l_pwmStr, "l_pwm: %i", 0);
-			sprintf(r_pwmStr, "r_pwm: %i", 0);
-			lora_tx(l_pwmStr, 11);
-			lora_tx(r_pwmStr, 11);
+			leftPWM = 0;
+			rightPWM = 0;
+//			char l_pwmStr[11];
+//			char r_pwmStr[11];
+//			sprintf(l_pwmStr, "l_pwm: %i", 0);
+//			sprintf(r_pwmStr, "r_pwm: %i", 0);
+//			lora_tx(l_pwmStr, 11);
+//			lora_tx(r_pwmStr, 11);
 		}
 	}
 }

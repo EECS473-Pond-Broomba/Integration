@@ -57,6 +57,7 @@ UART_HandleTypeDef huart6;
 
 xSemaphoreHandle gps_sem;
 xSemaphoreHandle rec_sem;
+xSemaphoreHandle trans_sem;
 
 MCP3221 bat_curr;
 SF_Nav kf;
@@ -107,6 +108,17 @@ double bearingBetweenStates(state_var &state1, state_var &state2) {
 	return atan2(state1.y - state2.y, state1.x - state2.x) * (180.0/3.141592653589793238463);
 }
 
+struct demo
+{
+	int16_t targetX;
+	int16_t targetY;
+	double x;
+	double y;
+	double b;
+	int l_pwm;
+	int r_pwm;
+};
+
 void lora_init()
 {
 	radio.Modulation = LORA;
@@ -122,14 +134,18 @@ void lora_init()
 	radio.CRSel          = CR4_5;
 
 	radio.vInitialize();
+	trans_sem = xSemaphoreCreateBinary();
 }
 
 uint8_t lora_tx(char* msg, size_t size)
 {
+	xSemaphoreTake(trans_sem, portMAX_DELAY);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	radio.CrcDisable = true;	// True for TX and False for RX
 	radio.vGoStandby();
-	return radio.bSendMessage((byte*)msg, size);
+	uint8_t val =  radio.bSendMessage((byte*)msg, size);
+	xSemaphoreGive(trans_sem);
+	return val;
 }
 
 // ---------------------------- Our Tasks --------------------------------------
@@ -213,7 +229,25 @@ void MovePID(void* arg) {
 		if(kf.get_valid()) {
 			cont.updatePidPosition(boatState.x, boatState.y, boatState.b);
 		}
+		demo demoState = { 	.targetX = cont.targetX,
+							.targetY = cont.targetY,
+							.x = boatState.x,
+							.y = boatState.y,
+							.b = boatState.b,
+							.l_pwm = cont.leftPWM,
+							.r_pwm = cont.rightPWM
+		};
+		int dummy = 0;
 
+//		char kalmanXStr[16];
+//		char kalmanYStr[16];
+//		char kalmanBStr[16];
+//		sprintf(kalmanXStr, "kalmanX: %f", boatState.x);
+//		sprintf(kalmanYStr, "kalmanY: %f", boatState.y);
+//		sprintf(kalmanYStr, "kalmanB: %f", boatState.b);
+//		lora_tx(kalmanXStr, 16);
+//		lora_tx(kalmanYStr, 16);
+//		lora_tx(kalmanBStr, 16);
 //		if(stateCounter < TESTDELAY) {
 //			stateCounter++;
 //			cont.setMotorSpeed(0, 0);
@@ -252,6 +286,15 @@ void MoveLinear(void* arg) {
 		if(kf.get_valid()) {
 			cont.updateLinearPosition(boatState.x, boatState.y, boatState.b);
 		}
+		demo demoState = { 	.targetX = cont.targetX,
+									.targetY = cont.targetY,
+									.x = boatState.x,
+									.y = boatState.y,
+									.b = boatState.b,
+									.l_pwm = cont.leftPWM,
+									.r_pwm = cont.rightPWM
+				};
+				int dummy = 0;
 
 //		if(stateCounter < TESTDELAY) {
 //			stateCounter++;
@@ -294,15 +337,15 @@ void UpdateKF(void* arg) {
 		kf.update();
 		boatState = kf.get_state();
 		int dummy = 0;
-		char kalmanXStr[16];
-		char kalmanYStr[16];
-		char kalmanBStr[16];
-		sprintf(kalmanXStr, "kalmanX: %f", boatState.x);
-		sprintf(kalmanYStr, "kalmanY: %f", boatState.y);
-		sprintf(kalmanYStr, "kalmanB: %f", boatState.b);
-		lora_tx(kalmanXStr, 16);
-		lora_tx(kalmanYStr, 16);
-		lora_tx(kalmanBStr, 16);
+//		char kalmanXStr[16];
+//		char kalmanYStr[16];
+//		char kalmanBStr[16];
+//		sprintf(kalmanXStr, "kalmanX: %f", boatState.x);
+//		sprintf(kalmanYStr, "kalmanY: %f", boatState.y);
+//		sprintf(kalmanYStr, "kalmanB: %f", boatState.b);
+//		lora_tx(kalmanXStr, 16);
+//		lora_tx(kalmanYStr, 16);
+//		lora_tx(kalmanBStr, 16);
 //		uart_printf("some\r\n");
 //		vTaskDelay(1000);
 	}
@@ -313,6 +356,7 @@ void checkBattery(void*)
 {
 	bat_curr.init(&hi2c3, 0x4f, 1);
 	lora_init();
+	xSemaphoreGive(trans_sem);
 	HAL_GPIO_WritePin(RELAY_PORT, RELAY_PIN, GPIO_PIN_RESET);
 	//Wait while bat_curr is less than 0.1 A
 //	while(bat_curr.getCurrent() < 0.1);
@@ -357,7 +401,7 @@ void TestMotors(void* arg) {
 // Task that sends heartbeat
 void Heartbeat(void* arg) {
 	TickType_t xLastWakeTime;
-	const TickType_t xPeriod = pdMS_TO_TICKS(1000);
+	const TickType_t xPeriod = pdMS_TO_TICKS(5000);
 	xLastWakeTime = xTaskGetTickCount();
 	radio.Modulation = LORA;
 	radio.COB            = RFM95;
@@ -365,7 +409,7 @@ void Heartbeat(void* arg) {
 	radio.OutputPower    = 19;             //17dBm OutputPower
 	radio.PreambleLength = 16;             //16Byte preamble
 	radio.FixedPktLength = false;          //explicit header mode for LoRa
-	radio.PayloadLength  = 21;
+	radio.PayloadLength  = 20;
 
 	radio.SFSel          = SF12;
 	radio.BWSel          = BW125K;
@@ -377,13 +421,30 @@ void Heartbeat(void* arg) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 		radio.CrcDisable = true;	// True for TX and False for RX
 		radio.vGoStandby();
-//		radio.bSendMessage(heartbeat, 7);
-		char targetXStr[16];
-		char targetYStr[16];
-		sprintf(targetXStr, "targetX: %i", cont.targetX);
-		sprintf(targetYStr, "targetY: %i", cont.targetY);
-		lora_tx(targetXStr, 16);
-		lora_tx(targetYStr, 16);
+		radio.bSendMessage(heartbeat, 7);
+		char targetXStr[20];
+		char targetYStr[20];
+		sprintf(targetXStr, "@targetX: %i", cont.targetX);
+		sprintf(targetYStr, "@targetY: %i", cont.targetY);
+//		targetXStr[19] = '\0';
+//		targetYStr[19] = '\0';
+		lora_tx(targetXStr, 20);
+		lora_tx(targetYStr, 20);
+		char kalmanXStr[20];
+		char kalmanYStr[20];
+		char kalmanBStr[20];
+		sprintf(kalmanXStr, "@kalmanX: %f", (float)boatState.x);
+		sprintf(kalmanYStr, "@kalmanY: %f", (float)boatState.y);
+		sprintf(kalmanBStr, "@kalmanB: %f", (float)boatState.b);
+//		sprintf(kalmanXStr, "@kalmanX:");
+//		sprintf(kalmanYStr, "@kalmanY:");
+//		sprintf(kalmanBStr, "@kalmanB:");
+//		kalmanXStr[19] = '\0';
+//		kalmanYStr[19] = '\0';
+//		kalmanBStr[19] = '\0';
+		lora_tx(kalmanXStr, 20);
+		lora_tx(kalmanYStr, 20);
+		lora_tx(kalmanBStr, 20);
 		vTaskDelayUntil(&xLastWakeTime, xPeriod);
 	}
 }
@@ -850,13 +911,14 @@ int main(void)
 //  lora_init();
 //  lora_tx((char*)heartbeat, 7);
   cont.init();
+
 //  xTaskCreate(UpdateKF, "kalman", 2048, NULL, 1, NULL);
 //  xTaskCreate(MovePID, "pid", 1024, NULL, 1, NULL);
   xTaskCreate(MoveLinear, "linear", 2048, NULL, 1, NULL);
 //  xTaskCreate(TestMotors, "testMotors", 512, NULL, 0, NULL);
 //  xTaskCreate(Sensors, "sensors", 128, NULL, 1, NULL);
-  xTaskCreate(Heartbeat, "heartbeat", 128, NULL, 2, NULL);
-  xTaskCreate(Receive, "rx", 256, NULL, 1, NULL);
+//  xTaskCreate(Heartbeat, "heartbeat", 2048, NULL, 2, NULL);
+//  xTaskCreate(Receive, "rx", 256, NULL, 1, NULL);
 //  xTaskCreate(Blink, "blink", 128, NULL, 0, NULL);
   xTaskCreate(checkBattery, "currentSensor", 256, NULL, 3, NULL);	// MUST BE HIGHEST PRIORITY
   vTaskStartScheduler();

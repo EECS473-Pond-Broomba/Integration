@@ -30,11 +30,12 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 	t = refresh_time;
 
 	double gpsErrorSum, gpsVelErrorSum, imuAngVelErrorSum = 0.0;
-	double dist, gpsBearing;
+	double dist, gpsBearing = 0.0;
 	// Calibrate Q matrix
 	prev_location.latitude = 0.0;
 	prev_location.longitude = 0.0;
 //	while(!calibrate) {};	// Wait for calibrate to go true
+
 	for(int i = 0; i < NUMCAL; i += 0) {
 		if(gps.update()) {
 			prev_location = curr_location;
@@ -51,6 +52,7 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 			i++;
 		}
 	}
+
 
 
 	// EKF
@@ -98,14 +100,14 @@ void SF_Nav::init(UART_HandleTypeDef* uh, I2C_HandleTypeDef* ih, float refresh_t
 			gpsVelErrorSum / (NUMCAL-1),
 			imuAngVelErrorSum / (NUMCAL-1);
 	// Jacobian of w w.r.t states
-	V << gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0, 0,
-		 0, gpsErrorSum / (NUMCAL-1), 0, 0, 0, 0,
+	V << gpsErrorSum / (NUMCAL-1)*10, 0, 0, 0, 0, 0,
+		 0, gpsErrorSum / (NUMCAL-1)*10, 0, 0, 0, 0,
 		 0, 0, VNOISE, 0, 0, 0,
 		 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0, 0,
 		 0, 0, 0, 0, gpsVelErrorSum / (NUMCAL-1), 0,
 		 0, 0, 0, 0, 0, imuAngVelErrorSum / (NUMCAL-1);
-	R << 3, 0, 0, 0, 0, 0,
-		 0, 3, 0, 0, 0, 0,
+	R << 5, 0, 0, 0, 0, 0,
+		 0, 5, 0, 0, 0, 0,
 		 0, 0, 0.5, 0, 0, 0,
 		 0, 0, 0, 1, 0, 0,
 		 0, 0, 0, 0, 5, 0,
@@ -187,15 +189,15 @@ void SF_Nav::update()
 		P_n = (I-K_n*H)*P_pred;
 
 	}
-	char kalmanXStr[16];
-	char kalmanYStr[16];
-	char kalmanBStr[16];
-	sprintf(kalmanXStr, "kalmanX: %f", x_n(0));
-	sprintf(kalmanYStr, "kalmanY: %f", x_n(1));
-	sprintf(kalmanYStr, "kalmanB: %f", x_n(2));
-	lora_tx(kalmanXStr, 16);
-	lora_tx(kalmanYStr, 16);
-	lora_tx(kalmanBStr, 16);
+//	char kalmanXStr[16];
+//	char kalmanYStr[16];
+//	char kalmanBStr[16];
+//	sprintf(kalmanXStr, "kalmanX: %f", x_n(0));
+//	sprintf(kalmanYStr, "kalmanY: %f", x_n(1));
+//	sprintf(kalmanYStr, "kalmanB: %f", x_n(2));
+//	lora_tx(kalmanXStr, 16);
+//	lora_tx(kalmanYStr, 16);
+//	lora_tx(kalmanBStr, 16);
 }
 
 state_var SF_Nav::get_state() {

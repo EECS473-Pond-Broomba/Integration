@@ -62,6 +62,7 @@ public:
     }
 
     int16_t targetX, targetY;
+    int leftPWM, rightPWM;
 private:
     uint16_t old_distance, old_bearing;
     int pid_p_dist, pid_i_dist, pid_d_dist;
